@@ -15,7 +15,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'unv_deploy'
+project = 'roy'
 copyright = '2019, Yaroslav Rudenok [Morty Space]'
 author = 'Yaroslav Rudenok [Morty Space]'
 
@@ -106,7 +106,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'unv_deploydoc'
+htmlhelp_basename = 'roydoc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -133,7 +133,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'unv_deploy.tex', 'unv\\_template Documentation',
+    (master_doc, 'roy.tex', 'unv\\_template Documentation',
      'change', 'manual'),
 ]
 
@@ -143,7 +143,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'unv_deploy', 'unv_deploy Documentation',
+    (master_doc, 'roy', 'roy Documentation',
      [author], 1)
 ]
 
@@ -154,8 +154,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'unv_deploy', 'unv_deploy Documentation',
-     author, 'unv_deploy', 'One line description of project.',
+    (master_doc, 'roy', 'roy Documentation',
+     author, 'roy', 'One line description of project.',
      'Miscellaneous'),
 ]
 
