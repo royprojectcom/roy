@@ -1,0 +1,21 @@
+[Unit]
+Description={{ description }} [{{ instance }}]
+After=network.target
+
+[Service]
+Type={{ deploy.settings.systemd_type }}
+User={{ deploy.settings.user }}
+Group={{ deploy.settings.user }}
+ExecStart={{ deploy.settings.bin }}
+WorkingDirectory={{ deploy.settings.home_abs }}
+LimitNOFILE={{ limit_nofile }}
+
+Environment=SETTINGS={{ deploy.settings.module }}
+Environment=SETTINGS_DEPLOY_COMPONENTS_APP_INSTANCE={{ instance }}
+
+{% for conf in deploy.settings.systemd_config %}
+{{ conf }}
+{% endfor %}
+
+[Install]
+WantedBy=multi-user.target

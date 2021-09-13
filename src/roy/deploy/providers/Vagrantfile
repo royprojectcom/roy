@@ -1,0 +1,42 @@
+Vagrant.configure("2") do |config|
+    # assign ip in private network
+    config.vm.network "private_network", type: "dhcp"
+
+    # disable default mount folder
+    config.vm.synced_folder ".", "/vagrant", disabled: true
+
+    # make ssh for root
+    ssh_pub_key = File.readlines("#{Dir.home}/.ssh/id_rsa.pub").first.strip
+    config.ssh.insert_key = false
+    config.vm.provision 'shell', inline: 'rm -rf /root/.ssh'
+    config.vm.provision 'shell', inline: 'mkdir -p /root/.ssh'
+    config.vm.provision 'shell',
+        inline: "echo #{ssh_pub_key} >> /root/.ssh/authorized_keys"
+    config.vm.provision 'shell',
+        inline: "echo #{ssh_pub_key} >> /home/vagrant/.ssh/authorized_keys",
+        privileged: false
+
+    {% for server in provider.servers %}
+    config.vm.define "{{ server.name }}" do |app|
+        app.vm.box = "{{ server.image }}"
+        app.vm.hostname = "{{ server.name }}"
+
+        {% if server.vm == 'virtualbox' %}
+        app.vm.provider "virtualbox" do |v|
+            v.name = "{{ server.name }}"
+            v.cpus = {{ server.cpus }}
+            v.memory = {{ server.ram }}
+            v.customize ["modifyvm", :id, "--uartmode1", "disconnected"]
+            v.customize ["modifyvm", :id, "--vram", "16"]
+        end
+        {% elif server.vm == 'parallels' %}
+        app.vm.provider "parallels" do |v|
+            v.name = "{{ server.name }}"
+            v.cpus = "{{ server.cpus }}"
+            v.memory = {{ server.ram }}
+        end
+        {% endif %}
+    end
+    {% endfor %}
+end
+

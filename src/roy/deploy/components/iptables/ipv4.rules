@@ -1,0 +1,38 @@
+# start filters
+*filter
+
+-A INPUT -i lo -j ACCEPT
+-A INPUT ! -i lo -d 127.0.0.0/8 -j REJECT
+-A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+-A OUTPUT -j ACCEPT
+
+{%- if access_hosts %}
+# start internal hosts rules
+{%- for host in access_hosts %}
+-A INPUT -p tcp -s {{ host['public_ip'] }} -j ACCEPT
+{%- if host['public_ip'] != host['private_ip'] %}
+-A INPUT -p tcp -s {{ host['private_ip'] }} -j ACCEPT
+{%- endif %}
+-A INPUT -p udp -s {{ host['public_ip'] }} -j ACCEPT
+{%- if host['public_ip'] != host['private_ip'] %}
+-A INPUT -p udp -s {{ host['private_ip'] }} -j ACCEPT
+{%- endif %}
+{%- endfor %}
+# end internal hosts rules
+{%- endif %}
+
+{% if current_host %}
+# start current host rules
+{{ current_host }}
+# end current host rules
+{%- endif %}
+
+# ssh
+-A INPUT -p tcp -m state --state NEW --dport 22 -j ACCEPT
+-A INPUT -p icmp -m icmp --icmp-type 8 -j ACCEPT
+
+-A INPUT -j REJECT
+-A FORWARD -j REJECT
+
+COMMIT
+# end filters [need for correct read of file]

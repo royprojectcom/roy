@@ -1,0 +1,18 @@
+method-complexity:
+  config:
+    threshold: 11
+exclude_patterns:
+  - "./setup.py"
+  - "docs/"
+  - "tests/"
+plugins:
+  fixme:
+    enabled: true
+  markdownlint:
+    enabled: true
+  pep8:
+    enabled: true
+  radon:
+    enabled: true
+  sonarpython:
+    enabled: true

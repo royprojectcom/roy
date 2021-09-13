@@ -1,0 +1,14 @@
+[Unit]
+Description=The NGINX HTTP and reverse proxy server
+After=syslog.target network.target remote-fs.target nss-lookup.target
+
+[Service]
+Type=forking
+PIDFile={{ deploy.settings.root_abs / 'logs' / 'nginx.pid' }}
+ExecStartPre={{ deploy.settings.root_abs / 'sbin' / 'nginx -t' }}
+ExecStart={{ deploy.settings.root_abs / 'sbin' / 'nginx' }}
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStop=/bin/kill -s QUIT $MAINPID
+
+[Install]
+WantedBy=multi-user.target

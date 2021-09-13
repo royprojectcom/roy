@@ -1,0 +1,10 @@
+[Unit]
+Description=Iptables load rules after boot
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart={{ deploy.settings.bin }}
+
+[Install]
+WantedBy=multi-user.target

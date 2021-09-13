@@ -1,0 +1,14 @@
+[Unit]
+Description=Redis In-Memory Data Store
+After=network.target
+
+[Service]
+Type=notify
+User={{ deploy.user }}
+ExecStart={{ deploy.settings.bin }} {{ deploy.settings.config_path }}
+RestartSec=5s
+Restart=on-success
+LimitNOFILE=10000
+
+[Install]
+WantedBy=multi-user.target
