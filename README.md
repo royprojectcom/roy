@@ -8,7 +8,7 @@
 [![PyPI implementation](https://img.shields.io/pypi/implementation/roy.svg)](https://pypi.python.org/pypi/roy/)
 [![PyPI pyversions](https://img.shields.io/pypi/pyversions/roy.svg)](https://pypi.python.org/pypi/roy/)
 [![PyPI license](https://img.shields.io/pypi/l/roy.svg)](https://pypi.python.org/pypi/roy/)
-[![PyPI version fury.io](https://badge.fury.io/py/roy.svg)](https://pypi.python.org/pypi/roy/)
-[![PyPI download month](https://img.shields.io/pypi/dm/roy.svg)](https://pypi.python.org/pypi/unv_
+[![PyPI version](https://badge.fury.io/py/roy.svg)](https://pypi.python.org/pypi/roy/)
+[![PyPI downloads per month](https://img.shields.io/pypi/dm/roy.svg)](https://pypi.python.org/pypi/unv_)
 
-## Deployment package to simplify server maintenance 
+## Set of libs to simplify deploy configuration into app settings
