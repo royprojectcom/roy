@@ -82,10 +82,10 @@ class DeploySettings(ComponentSettings):
         return self._find_classes(tasks, 'DeployTasks')
 
     @property
-    def providers(self):
+    def provider_classes(self):
         providers = self._data['default_providers'] + self._data['providers']
         return [
-            provider_class(self.services)
+            provider_class
             for provider_class in self._find_classes(
                 providers, 'DeployProvider'
             )

@@ -30,8 +30,9 @@ class DeployProvider:
     DEFAULT = {}
     SCHEMA = {}
 
-    def __init__(self, services):
+    def __init__(self, manager, services):
         self._servers = []
+        self._manager = manager
 
         self.services = services
         self.project_dir = Path().cwd()

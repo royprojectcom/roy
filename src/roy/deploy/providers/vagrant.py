@@ -53,6 +53,8 @@ class VagrantProvider(DeployProvider):
         # TODO: rename and convert hosts to dev.json -> as compilation
         # of settings
         old_hosts_file = SETTINGS.settings_cache_file
+        if self._manager.override:
+            old_hosts_file.unlink(missing_ok=True)
         if not self.servers:
             return {}
 

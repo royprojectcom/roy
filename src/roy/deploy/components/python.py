@@ -127,7 +127,7 @@ class PythonTasks(AppTasks):
         await self._local('python setup.py sdist bdist_wheel')
 
     @register.after(sync)
-    @register.before(setup)
+    @register.after(setup)
     async def after_sync(self):
         await self._local('rm -rf ./build ./dist')
 

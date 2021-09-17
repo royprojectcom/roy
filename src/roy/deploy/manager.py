@@ -19,6 +19,7 @@ class DeployTasksManager(TasksManager):
         super().__init__()
 
         self.debug = False
+        self.override = False
         self.hosts = {}
         self.nohost = {
             'user': '__nohost__',
@@ -30,11 +31,12 @@ class DeployTasksManager(TasksManager):
 
     def run(self, *commands):
         commands = list(commands)
-        if '-v' in commands:
-            commands.remove('-v')
-            self.debug = True
+        if '-f' in commands:
+            commands.remove('-f')
+            self.override = True
 
-        for provider in SETTINGS.providers:
+        for provider_class in SETTINGS.provider_classes:
+            provider = provider_class(self, SETTINGS.services)
             self.hosts.update(asyncio.run(provider.initialize()))
 
         super().run(*commands)

@@ -182,7 +182,7 @@ class DeployTasks(Tasks):
             f"ssh {interactive_flag} -p {self.port} "
             f"{self.user}@{self.public_ip} "
             f'"{self._current_prefix}{command}"',
-            interactive=interactive
+            interactive=interactive, debug=False
         ) or ''
         if strip:
             response = response.strip()

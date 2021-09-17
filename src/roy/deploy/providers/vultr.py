@@ -159,6 +159,9 @@ class VultrProvider(DeployProvider):
 
         old_hosts = {}
         old_hosts_file = SETTINGS.settings_cache_file
+        if self._manager.override:
+            old_hosts_file.unlink(missing_ok=True)
+
         current_hosts = {}
         hosts = {}
         for server in self.servers:

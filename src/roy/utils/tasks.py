@@ -51,11 +51,10 @@ class Tasks:
             raise ValueError('Please define NAMESPACE for {}'.format(cls))
         return namespace
 
-    @staticmethod
-    async def _local(command, interactive=False):
+    async def _local(self, command, interactive=False, debug=True):
         try:
-            # log running command
-            # log run command on RemoteManager
+            if self._manager.debug and debug:
+                print(f"[local] {command}")
             return await run_in_shell(command, interactive)
         except RunInShellError as err:
             raise TaskRunError(err)
@@ -64,6 +63,7 @@ class Tasks:
 class TasksManager:
     def __init__(self):
         self.tasks = {}
+        self.debug = False
 
     def register(self, task_class):
         self.tasks[task_class.get_namespace()] = task_class
@@ -90,6 +90,10 @@ class TasksManager:
         before_hooks_to_run = []
         after_hooks_to_run = []
         tasks_to_run = []
+        commands = list(commands)
+        if '-v' in commands:
+            commands.remove('-v')
+            self.debug = True
 
         for command in commands:
             namespace, name = command.split('.')
