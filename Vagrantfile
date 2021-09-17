@@ -17,54 +17,54 @@ Vagrant.configure("2") do |config|
         privileged: false
 
     
-    config.vm.define "dev-backend-django-1" do |app|
+    config.vm.define "roy-dev-backend-django-1" do |app|
         app.vm.box = "generic/debian11"
-        app.vm.hostname = "dev-backend-django-1"
+        app.vm.hostname = "roy-dev-backend-django-1"
 
         
         app.vm.provider "parallels" do |v|
-            v.name = "dev-backend-django-1"
+            v.name = "roy-dev-backend-django-1"
             v.cpus = "1"
             v.memory = 512
         end
         
     end
     
-    config.vm.define "dev-frontend-nginx-1" do |app|
+    config.vm.define "roy-dev-frontend-nginx-1" do |app|
         app.vm.box = "generic/debian11"
-        app.vm.hostname = "dev-frontend-nginx-1"
+        app.vm.hostname = "roy-dev-frontend-nginx-1"
 
         
         app.vm.provider "parallels" do |v|
-            v.name = "dev-frontend-nginx-1"
+            v.name = "roy-dev-frontend-nginx-1"
             v.cpus = "1"
             v.memory = 512
         end
         
     end
     
-    config.vm.define "dev-db-postgres-1" do |app|
+    config.vm.define "roy-dev-db-postgres-1" do |app|
         app.vm.box = "generic/debian11"
-        app.vm.hostname = "dev-db-postgres-1"
+        app.vm.hostname = "roy-dev-db-postgres-1"
 
         
         app.vm.provider "parallels" do |v|
-            v.name = "dev-db-postgres-1"
+            v.name = "roy-dev-db-postgres-1"
             v.cpus = "1"
-            v.memory = 256
+            v.memory = 384
         end
         
     end
     
-    config.vm.define "dev-db-redis-1" do |app|
+    config.vm.define "roy-dev-db-redis-1" do |app|
         app.vm.box = "generic/debian11"
-        app.vm.hostname = "dev-db-redis-1"
+        app.vm.hostname = "roy-dev-db-redis-1"
 
         
         app.vm.provider "parallels" do |v|
-            v.name = "dev-db-redis-1"
+            v.name = "roy-dev-db-redis-1"
             v.cpus = "1"
-            v.memory = 256
+            v.memory = 384
         end
         
     end

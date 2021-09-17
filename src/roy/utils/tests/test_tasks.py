@@ -30,11 +30,17 @@ class SimpleTasks(Tasks):
     async def somehook(self):
         return 4
 
-    @somehook.before
+    @register
+    async def some_other_hook(self):
+        return 6
+
+    @register.before(somehook)
+    @register.before(some_other_hook)
     async def somehook_before(self):
         self.__class__.BEFORE_CALLED += 1
 
-    @somehook.after
+    @register.after(somehook)
+    @register.after(some_other_hook)
     async def somehook_after(self):
         self.__class__.AFTER_CALLED += 1
 
@@ -72,7 +78,8 @@ def test_tasks_hooks():
     manager = TasksManager()
     manager.register(SimpleTasks)
 
-    result = manager.run('simple.somehook', 'simple.example')
-    assert result == 2
-    assert SimpleTasks.BEFORE_CALLED == 1
-    assert SimpleTasks.AFTER_CALLED == 1
+    result = manager.run(
+        'simple.somehook', 'simple.example', 'simple.some_other_hook')
+    assert result == 6
+    assert SimpleTasks.BEFORE_CALLED == 2
+    assert SimpleTasks.AFTER_CALLED == 2

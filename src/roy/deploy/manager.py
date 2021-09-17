@@ -39,11 +39,9 @@ class DeployTasksManager(TasksManager):
 
         super().run(*commands)
 
-    def run_hook(self, task_class, name, hook_name):
-        instance = task_class(self, None, '__nohost__', self.nohost)
-        task = getattr(instance, name)
-        task = getattr(task, f'__task__{hook_name}__')
-        return asyncio.run(task(instance))
+    def run_hooks(self, task_class, name, hook_name, instance=None):
+        instance = task_class(self, None, self.nohost)
+        super().run_hooks(task_class, name, hook_name, instance=instance)
 
     def run_task(self, task_class, name, args):
         if not issubclass(task_class, DeployTasks):

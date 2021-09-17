@@ -116,8 +116,8 @@ class PythonTasks(AppTasks):
         await self.sync()
         await self.start()
 
-    @sync.before
-    @setup.before
+    @register.before(sync)
+    @register.before(setup)
     async def before_sync(self):
         current_dir = Path.cwd()
         if not (current_dir / 'setup.py').exists():
@@ -126,8 +126,8 @@ class PythonTasks(AppTasks):
         await self._local('pip install -e .')
         await self._local('python setup.py sdist bdist_wheel')
 
-    @sync.after
-    @setup.after
+    @register.after(sync)
+    @register.before(setup)
     async def after_sync(self):
         await self._local('rm -rf ./build ./dist')
 

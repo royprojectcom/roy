@@ -1,0 +1,160 @@
+{
+  "python": [
+    {
+      "count": 1,
+      "cpus": 1,
+      "ram": 512,
+      "image": "generic/debian11",
+      "vm": "parallels",
+      "name": "roy-dev-backend-django-1",
+      "provider": "vagrant",
+      "components": {
+        "python": {},
+        "iptables": {
+          "allow": [
+            "nginx"
+          ]
+        }
+      },
+      "public_ip": "10.37.129.42",
+      "private_ip": "10.37.129.42"
+    }
+  ],
+  "iptables": [
+    {
+      "count": 1,
+      "cpus": 1,
+      "ram": 512,
+      "image": "generic/debian11",
+      "vm": "parallels",
+      "name": "roy-dev-backend-django-1",
+      "provider": "vagrant",
+      "components": {
+        "python": {},
+        "iptables": {
+          "allow": [
+            "nginx"
+          ]
+        }
+      },
+      "public_ip": "10.37.129.42",
+      "private_ip": "10.37.129.42"
+    },
+    {
+      "count": 1,
+      "cpus": 1,
+      "ram": 512,
+      "image": "generic/debian11",
+      "vm": "parallels",
+      "name": "roy-dev-frontend-nginx-1",
+      "provider": "vagrant",
+      "components": {
+        "nginx": {},
+        "iptables": {}
+      },
+      "public_ip": "10.37.129.43",
+      "private_ip": "10.37.129.43"
+    },
+    {
+      "count": 1,
+      "cpus": 1,
+      "ram": 384,
+      "image": "generic/debian11",
+      "vm": "parallels",
+      "name": "roy-dev-db-postgres-1",
+      "provider": "vagrant",
+      "components": {
+        "postgres": {},
+        "iptables": {
+          "allow": [
+            "python"
+          ]
+        }
+      },
+      "public_ip": "10.37.129.41",
+      "private_ip": "10.37.129.41"
+    },
+    {
+      "count": 1,
+      "cpus": 1,
+      "ram": 384,
+      "image": "generic/debian11",
+      "vm": "parallels",
+      "name": "roy-dev-db-redis-1",
+      "provider": "vagrant",
+      "components": {
+        "redis": {
+          "listen_private_ip": false
+        },
+        "iptables": {
+          "allow": [
+            "python"
+          ]
+        }
+      },
+      "public_ip": "10.37.129.40",
+      "private_ip": "10.37.129.40"
+    }
+  ],
+  "nginx": [
+    {
+      "count": 1,
+      "cpus": 1,
+      "ram": 512,
+      "image": "generic/debian11",
+      "vm": "parallels",
+      "name": "roy-dev-frontend-nginx-1",
+      "provider": "vagrant",
+      "components": {
+        "nginx": {},
+        "iptables": {}
+      },
+      "public_ip": "10.37.129.43",
+      "private_ip": "10.37.129.43"
+    }
+  ],
+  "postgres": [
+    {
+      "count": 1,
+      "cpus": 1,
+      "ram": 384,
+      "image": "generic/debian11",
+      "vm": "parallels",
+      "name": "roy-dev-db-postgres-1",
+      "provider": "vagrant",
+      "components": {
+        "postgres": {},
+        "iptables": {
+          "allow": [
+            "python"
+          ]
+        }
+      },
+      "public_ip": "10.37.129.41",
+      "private_ip": "10.37.129.41"
+    }
+  ],
+  "redis": [
+    {
+      "count": 1,
+      "cpus": 1,
+      "ram": 384,
+      "image": "generic/debian11",
+      "vm": "parallels",
+      "name": "roy-dev-db-redis-1",
+      "provider": "vagrant",
+      "components": {
+        "redis": {
+          "listen_private_ip": false
+        },
+        "iptables": {
+          "allow": [
+            "python"
+          ]
+        }
+      },
+      "public_ip": "10.37.129.40",
+      "private_ip": "10.37.129.40"
+    }
+  ]
+}

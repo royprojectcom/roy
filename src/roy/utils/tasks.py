@@ -2,25 +2,35 @@ import logging
 import asyncio
 import typing
 
-from functools import partial
+from functools import partial, wraps
 
 from .os import run_in_shell, RunInShellError
 
 
 def register(method: typing.Any) -> typing.Any:
     method.__task__ = True
-
-    def before(func):
-        method.__task__before__ = func
-        return method
-    method.before = before
-
-    def after(func):
-        method.__task__after__ = func
-        return method
-    method.after = after
-
     return method
+
+
+def _register_hook(name: str, method: typing.Callable):
+    def decorator(hook_func):
+        hooks = getattr(method, name, [])
+        hooks.append(hook_func)
+        setattr(method, name, hooks)
+        return hook_func
+    return decorator
+
+
+def before(method: typing.Callable):
+    return _register_hook('__task__before__', method)
+
+
+def after(method: typing.Callable):
+    return _register_hook('__task__after__', method)
+
+
+register.before = before
+register.after = after
 
 
 class TaskRunError(Exception):
@@ -62,17 +72,24 @@ class TasksManager:
         task = getattr(task_class(self), name)
         return asyncio.run(task(*args))
 
-    def run_hook(self, task_class, name, hook_name):
-        instance = task_class(self)
+    def run_hooks(self, task_class, name, hook_name, instance=None):
+        instance = instance or task_class(self)
         task = getattr(instance, name)
-        task = getattr(task, f'__task__{hook_name}__')
-        return asyncio.run(task(instance))
+        hooks = getattr(task, f'__task__{hook_name}__', [])
+
+        if not hooks:
+            return
+
+        async def _run_hooks_gather():
+            await asyncio.gather(*[hook(instance) for hook in hooks])
+
+        asyncio.run(_run_hooks_gather())
 
     def run(self, *commands) -> typing.Any:
         result = None
         before_hooks_to_run = []
-        tasks_to_run = []
         after_hooks_to_run = []
+        tasks_to_run = []
 
         for command in commands:
             namespace, name = command.split('.')
@@ -89,27 +106,26 @@ class TasksManager:
                 method = getattr(task_class, name)
             except AttributeError:
                 pass
-                
-            before_func = getattr(method, '__task__before__', None)
-            after_func = getattr(method, '__task__after__', None)
 
-            if before_func:
-                before_hooks_to_run.append(
-                    partial(self.run_hook, task_class, name, 'before'))
+            before_hooks_to_run.append(
+                partial(self.run_hooks, task_class, name, 'before')
+            )
+
             if getattr(method, '__task__', None) and name == method.__name__:
                 tasks_to_run.append(
                     partial(self.run_task, task_class, name, args))
-            if after_func:
-                after_hooks_to_run.append(
-                    partial(self.run_hook, task_class, name, 'after'))
 
-        for task in before_hooks_to_run:
-            task()
+            after_hooks_to_run.append(
+                partial(self.run_hooks, task_class, name, 'after')
+            )
+
+        for run_hooks in before_hooks_to_run:
+            run_hooks()
 
         for task in tasks_to_run:
             result = task()
 
-        for task in after_hooks_to_run:
-            task()
+        for run_hooks in after_hooks_to_run:
+            run_hooks()
 
         return result

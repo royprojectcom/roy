@@ -18,7 +18,7 @@ class VagrantProvider(DeployProvider):
     DEFAULT = {
         'count': 1,
         'cpus': 1,
-        'ram': 256,
+        'ram': 384,
         'image': 'generic/debian11',
         'vm': 'virtualbox'
     }

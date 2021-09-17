@@ -1,16 +1,8 @@
 import json
 import pathlib
-# from roy.utils.collections import update_dict_recur
-
-# TODO: add support for auto task assign per namespace -> we can replace any
-# TODO: after postgres rebuild copy data folder
-# (stop postgres -> copy folder) -> build new version
-# TODO: fix geoip build for nginx (?) do we need this (?) -> probably no
-# TODO: we need to mount media folder of all (backend - nginx - nfs (?))
-# TODO: migrate data from one server to other
 
 SETTINGS = {'deploy': {
-    'env': 'dev',
+    'env': 'roy-dev',
     'services': {
         'backend': [{
             'hosts': [

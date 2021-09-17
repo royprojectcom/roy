@@ -9,7 +9,7 @@
         {
             "label": "Python: Build",
             "type": "shell",
-            // "dependsOn": ["Python: Cleanup Build"],
+            "dependsOn": ["Python: Cleanup Build"],
             "command": "source activate.sh && python setup.py sdist bdist_wheel"
         },
         {
