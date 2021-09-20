@@ -30,7 +30,7 @@ class PythonSettings(AppSettings):
             'path': 'build'
         },
         'systemd': {
-            'config': [
+            'default_config': [
                 'Environment=PYTHONPATH={settings.home_abs}'
             ]
         }

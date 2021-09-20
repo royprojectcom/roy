@@ -175,6 +175,8 @@ class DeployComponentSettings:
 
     @property
     def systemd_config(self):
+        for line in self.systemd.get('default_config', []):
+            yield line.format(settings=self)
         for line in self.systemd.get('config', []):
             yield line.format(settings=self)
 

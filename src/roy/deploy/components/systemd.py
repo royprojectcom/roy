@@ -11,6 +11,12 @@ class SystemdTasksMixin:
             'name': {'type': 'string'},
             'boot': {'type': 'boolean'},
             'type': {'type': 'string'},
+            'default_config': {
+                'type': 'list',
+                'schema': {
+                    'type': 'string'
+                }
+            },
             'config': {
                 'type': 'list',
                 'schema': {
