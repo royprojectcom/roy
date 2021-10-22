@@ -54,7 +54,8 @@ class SystemdTasksMixin:
     async def _sync_systemd_units(self):
         """Sync systemd units, delete old once if we changed
         template or count."""
-        systemd_cached_file = Path(f"~/.{self.settings.NAME}_systemd_services")
+        name = self.settings.NAME
+        systemd_cached_file = Path(f"~/.{name}_systemd_services")
         try:
             old_units = await self._run(f"cat {systemd_cached_file}")
             old_units = {Path(s) for s in old_units.split('\n')}
@@ -74,7 +75,10 @@ class SystemdTasksMixin:
 
         for service in services:
             service_path = self.settings.systemd_dir / service['name']
-            context = {'instance': service['instance']}.copy()
+            bin_ = str(self.settings.bin).format(
+                instance=service['instance'], deploy=self, settings=self.settings
+            )
+            context = {'instance': service['instance'], 'bin': bin_}.copy()
             context.update(service.get('context', {}))
             path = Path(service['template'])
             if not str(path).startswith('/'):

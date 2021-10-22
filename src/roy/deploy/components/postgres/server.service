@@ -5,7 +5,7 @@ Documentation=man:postgres(1)
 [Service]
 Type=notify
 User={{ deploy.settings.user }}
-ExecStart={{ deploy.settings.root_abs / 'bin' / 'postgres' }} -D {{ deploy.settings.data_dir }}
+ExecStart={{ bin }}
 ExecReload=/bin/kill -HUP $MAINPID
 KillMode=mixed
 KillSignal=SIGINT

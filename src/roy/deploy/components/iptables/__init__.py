@@ -68,7 +68,7 @@ SETTINGS = IPtablesSettings()
 
 
 class IPtablesTasks(DeployTasks, SystemdTasksMixin):
-    SETTINGS = IPtablesSettings
+    SETTINGS = SETTINGS
 
     @register
     async def list(self):

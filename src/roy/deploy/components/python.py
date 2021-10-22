@@ -11,6 +11,7 @@ class PythonSettings(AppSettings):
     SCHEMA = update_dict_recur(AppSettings.SCHEMA, {
         'root': {'type': 'string', 'required': True},
         'version': {'type': 'string', 'required': True},
+        'port': {'type': 'integer', 'required': False},
         'build': {
             'type': 'dict',
             'schema': {
@@ -24,7 +25,7 @@ class PythonSettings(AppSettings):
         'bin': "python3 --version",
         'user': 'python',
         'root': 'python',
-        'version': '3.9.6',
+        'version': '3.10.0',
         'build': {
             'fast': True,
             'path': 'build'
@@ -72,7 +73,7 @@ SETTINGS = PythonSettings()
 
 
 class PythonTasks(AppTasks):
-    SETTINGS = PythonSettings
+    SETTINGS = SETTINGS
 
     @register
     async def pip(self, command: str):
@@ -108,6 +109,7 @@ class PythonTasks(AppTasks):
         await self.pip(f'install {flag} {package}')
         await self._rmrf(Path(package))
 
+        await self._sync_roy_cache()
         await self._sync_systemd_units()
 
     @register

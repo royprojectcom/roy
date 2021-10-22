@@ -59,6 +59,7 @@ class RedisSettings(DeployComponentSettings):
         'port': 6379,
         'maxmemory': '64mb',
         'databases': 16,
+        'listen_private_ip': True,
         'root': 'app',
         'packages': {
             'redis': 'http://download.redis.io/releases/redis-6.2.5.tar.gz'
@@ -120,7 +121,7 @@ SETTINGS = RedisSettings()
 
 
 class RedisTasks(DeployTasks, SystemdTasksMixin):
-    SETTINGS = RedisSettings
+    SETTINGS = SETTINGS
 
     async def get_iptables_template(self):
         return self.settings.iptables_v4_rules

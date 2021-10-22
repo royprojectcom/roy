@@ -158,7 +158,7 @@ SETTINGS = NginxSettings()
 
 
 class NginxTasks(DeployTasks, SystemdTasksMixin):
-    SETTINGS = NginxSettings
+    SETTINGS = SETTINGS
 
     async def get_iptables_template(self):
         return self.settings.iptables_v4_rules
@@ -205,16 +205,18 @@ class NginxTasks(DeployTasks, SystemdTasksMixin):
             await self._upload_template(template, path)
 
         # nginx configs from other projects
-        # for task in self.get_all_deploy_tasks():
-        #     get_configs = getattr(task, 'get_nginx_include_configs', None)
-        #     if get_configs is not None:
-        #         configs = await get_configs()
-        #         for template, path in configs:
-        #             await self._upload_template(
-        #                 template,
-        #                 self.settings.root / self.settings.include.parent
-        #                 / path, {'deploy': task, 'nginx_deploy': self}
-        #             )
+        for task in self.get_all_manager_tasks():
+            get_configs = getattr(task, 'get_nginx_include_configs', None)
+            if get_configs is None:
+                continue
+
+            configs = await get_configs()
+            for template, path in configs:
+                await self._upload_template(
+                    template,
+                    self.settings.root / self.settings.include.parent
+                    / path, {'deploy': task, 'nginx_deploy': self}
+                )
 
         await self._sync_systemd_units()
 

@@ -146,9 +146,12 @@ class VultrProvider(DeployProvider):
 
             info = await self.get_server(server_id)
             if info.get('public_ip', '0.0.0.0') != '0.0.0.0':
-                await asyncio.open_connection(
-                    info['public_ip'], server.get('port', 22), limit=10)
-                info['ssh'] = True
+                try:
+                    await asyncio.open_connection(
+                        info['public_ip'], server.get('port', 22), limit=10)
+                    info['ssh'] = True
+                except OSError:
+                    await asyncio.sleep(1)
 
         server.update(info)
         return server

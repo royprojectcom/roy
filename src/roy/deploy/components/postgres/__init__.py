@@ -11,7 +11,9 @@ from roy.deploy.components.systemd import SystemdTasksMixin
 class PostgresSettings(DeployComponentSettings):
     NAME = 'postgres'
     SCHEMA = {
+        'bin': {'type': 'string', 'required': True},
         'user': {'type': 'string', 'required': False},
+        'port': {'type': 'integer', 'required': True},
         'systemd': SystemdTasksMixin.SCHEMA,
         'root': {'type': 'string', 'required': True},
         'password': {'type': 'string', 'required': True},
@@ -19,6 +21,7 @@ class PostgresSettings(DeployComponentSettings):
         'data_dir': {'type': 'string', 'required': True},
         'locale': {'type': 'string', 'required': True},
         'configs': {'type': 'list', 'schema': {'type': 'string'}},
+        'listen_private_ip': {'type': 'boolean', 'required': False},
         'sources': {
             'type': 'dict',
             'schema': {
@@ -42,9 +45,12 @@ class PostgresSettings(DeployComponentSettings):
             'instances': {'count': 1}
         },
         'root': 'app',
+        'bin': 'postgres -D {settings.data_dir}',
         'password': 'postgres',
         'build_dir': 'build',
         'data_dir': 'data',
+        'port': 5432,
+        'listen_private_ip': True,
         'locale': 'en_US.UTF-8',
         'sources': {
             'postgres': 'https://ftp.postgresql.org/pub/source'
@@ -79,6 +85,14 @@ class PostgresSettings(DeployComponentSettings):
     }
 
     @property
+    def bin(self):
+        return self.root_abs / 'bin' / self._data['bin']
+    
+    @property
+    def port(self):
+        return self._data['port']
+
+    @property
     def sources(self):
         return self._data['sources']
 
@@ -103,12 +117,16 @@ class PostgresSettings(DeployComponentSettings):
     def iptables_v4_rules(self):
         return (self.local_root / self._data['iptables']['v4']).read_text()
 
+    @property
+    def listen_private_ip(self):
+        return self._data.get('listen_private_ip', False)
+
 
 SETTINGS = PostgresSettings()
 
 
 class PostgresTasks(DeployTasks, SystemdTasksMixin):
-    SETTINGS = PostgresSettings
+    SETTINGS = SETTINGS
 
     async def get_iptables_template(self):
         return self.settings.iptables_v4_rules

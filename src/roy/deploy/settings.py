@@ -49,6 +49,7 @@ class DeploySettings(ComponentSettings):
         'default_tasks': [
             'roy.deploy.components.app',
             'roy.deploy.components.python',
+            'roy.deploy.components.django',
             'roy.deploy.components.iptables',
             'roy.deploy.components.nginx',
             'roy.deploy.components.postgres',
@@ -70,7 +71,7 @@ class DeploySettings(ComponentSettings):
     @property
     def settings_cache_file(self):
         cache_dir = APP_SETTINGS.current_dir
-        return (cache_dir / f"{self.env}.json")
+        return (cache_dir / f".roy_{self.env}.json")
 
     @property
     def services(self):
@@ -145,17 +146,37 @@ class DeployComponentSettings:
     @classmethod
     def get_for_host(cls, host=None):
         settings = {}
+        hosts, current = cls.get_for_all_hosts()
+        current = host or current
+        for host in hosts:
+            if host['public_ip'] == current.get('public_ip') and \
+                    host.get('private_ip') == current.get('private_ip'):
+                settings = host['components'][cls.NAME]
+        return settings
+
+    @classmethod
+    def get_for_all_hosts(cls):
         hosts_file = SETTINGS.settings_cache_file
         if hosts_file.exists():
             hosts = json.loads(hosts_file.read_text())
-            current = host or hosts.get('__current__')
-            if not current:
-                return settings
-            for host in hosts.get(cls.NAME, []):
-                if host['public_ip'] == current.get('public_ip') and \
-                        host.get('private_ip') == current.get('private_ip'):
-                    settings = host['components'][cls.NAME]
-        return settings
+            return hosts.get(cls.NAME, []), hosts.get('__current__', {})
+        return [], {}
+
+    def get(self, **attrs):
+        return next(self.filter(**attrs), self)
+
+    def filter(self, **attrs):
+        hosts, _ = self.get_for_all_hosts()
+        for settings in hosts:
+            instance = self.__class__(settings, use_from_host=False)
+            settings_not_matched = next((
+                key for key, value in attrs.items()
+                if getattr(instance, key) != value
+            ), False)
+            if settings_not_matched:
+                continue
+
+            yield instance
 
     @property
     def user(self):

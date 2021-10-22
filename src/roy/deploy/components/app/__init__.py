@@ -6,7 +6,7 @@ from typing import Generator
 from watchgod import awatch
 
 from ...tasks import DeployTasks, nohost, register
-from ...settings import DeployComponentSettings
+from ...settings import DeployComponentSettings, SETTINGS as DEPLOY_SETTINGS
 
 from ..systemd import SystemdTasksMixin
 
@@ -77,7 +77,7 @@ SETTINGS = AppSettings()
 
 
 class AppTasks(DeployTasks, SystemdTasksMixin):
-    SETTINGS = AppSettings
+    SETTINGS = SETTINGS
 
     @register
     @nohost
@@ -97,6 +97,9 @@ class AppTasks(DeployTasks, SystemdTasksMixin):
                 )
                 await self.restart()
 
+    async def _sync_roy_cache(self):
+        await self._upload(DEPLOY_SETTINGS.settings_cache_file)
+
     async def build(self):
         """Define build instructions for your app"""
         await self._apt_install('rsync')
@@ -109,6 +112,7 @@ class AppTasks(DeployTasks, SystemdTasksMixin):
             self.settings.home_abs
         )
         await self._run(f'chmod +x {self.settings.bin}')
+        await self._sync_roy_cache()
         await self._sync_systemd_units()
 
     @register

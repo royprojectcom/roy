@@ -38,7 +38,7 @@ class DeployTasks(Tasks):
 
     def __init__(self, manager, lock, host):
         if self.SETTINGS is None or \
-                not issubclass(self.SETTINGS, DeployComponentSettings):
+                not isinstance(self.SETTINGS, DeployComponentSettings):
             raise ValueError(
                 "Provide correct 'SETTINGS' value "
                 "should be an subclass of 'DeployComponentSettings' not "
@@ -61,6 +61,13 @@ class DeployTasks(Tasks):
     @classmethod
     def get_namespace(cls):
         return cls.SETTINGS.NAME
+
+    @property
+    def listen_ip(self):
+        """Listen ip for service private or public avalability"""
+        if getattr(self.settings, 'listen_private_ip', False):
+            return self.private_ip
+        return self.public_ip
 
     def get_all_manager_tasks(self, name: str = ''):
         for task_class in self._manager.tasks.values():
@@ -212,6 +219,7 @@ class DeployTasks(Tasks):
             self, local_path: Path, path: Path, context: dict = None):
         context = context or {}
         context.setdefault('deploy', self)
+        context.setdefault('settings', self.settings)
 
         async with self._lock:
             render_path = Path(f'{local_path}.render')
