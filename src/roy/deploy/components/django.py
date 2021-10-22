@@ -21,7 +21,7 @@ SETTINGS = DjangoSettings()
 
 
 class DjangoTasks(PythonTasks):
-    SETTINGS = SETTINGS
+    SETTINGS = DjangoSettings
 
     @onehost
     @register

@@ -38,18 +38,18 @@ class DeployTasks(Tasks):
 
     def __init__(self, manager, lock, host):
         if self.SETTINGS is None or \
-                not isinstance(self.SETTINGS, DeployComponentSettings):
+                not issubclass(self.SETTINGS, DeployComponentSettings):
             raise ValueError(
                 "Provide correct 'SETTINGS' value "
                 "should be an subclass of 'DeployComponentSettings' not "
                 f"[{self.SETTINGS}]"
             )
 
-        self.settings = self.SETTINGS.create_from_host(host)
-        self.host = host
-        self.public_ip = host['public_ip']
-        self.private_ip = host['private_ip']
-        self.port = host.get('port', 22)
+        self.settings = self.SETTINGS(host=host)
+        self.host_name = self.settings.host_name
+        self.public_ip = self.settings.public_ip
+        self.private_ip = self.settings.private_ip
+        self.port = self.settings.ssh_port
         self.user = self.settings.user
 
         self._current_prefix = ''
@@ -182,7 +182,7 @@ class DeployTasks(Tasks):
         interactive_flag = '-t' if interactive else ''
         if self._manager.debug:
             print(
-                f"[{self.host.get('name', '-')}:"
+                f"[{self.host_name}:"
                 f"{self.user}@{self.public_ip}] {command}"
             )
         response = await self._local(

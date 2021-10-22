@@ -124,13 +124,20 @@ class DeployComponentSettings:
     DEFAULT = {}
     SCHEMA = {}
 
-    def __init__(self, settings=None, use_from_host=True):
-        settings = update_dict_recur(
-            settings or {},
-            self.get_for_host() if use_from_host else {}
-        )
+    def __init__(self, settings=None, host=None):
+        """Initialize deploy component settings, overrides by host settings"""
+        host_settings = self.get_for_host(host)
+        host = host or {}
+
+        settings = update_dict_recur(settings or {}, host_settings)
 
         self.local_root = Path(inspect.getfile(self._local_root_class)).parent
+
+        # TODO: should be strict host params
+        self.private_ip = host.get('private_ip', '')
+        self.public_ip = host.get('public_ip', '')
+        self.host_name = host.get('name', 'unnamed-host')
+        self.ssh_port = host.get('port', 22)
 
         settings = update_dict_recur(self.DEFAULT, settings)
         self._data = validate_schema(self.SCHEMA, settings)
@@ -138,10 +145,6 @@ class DeployComponentSettings:
     @property
     def _local_root_class(self):
         return self.__class__
-
-    @classmethod
-    def create_from_host(cls, host):
-        return cls(cls.get_for_host(host), use_from_host=False)
 
     @classmethod
     def get_for_host(cls, host=None):
@@ -166,9 +169,9 @@ class DeployComponentSettings:
         return next(self.filter(**attrs), self)
 
     def filter(self, **attrs):
-        hosts, _ = self.get_for_all_hosts()
-        for settings in hosts:
-            instance = self.__class__(settings, use_from_host=False)
+        host_settings, host = self.get_for_all_hosts()
+        for settings in host_settings:
+            instance = self.__class__(settings, host)
             settings_not_matched = next((
                 key for key, value in attrs.items()
                 if getattr(instance, key) != value
@@ -177,6 +180,13 @@ class DeployComponentSettings:
                 continue
 
             yield instance
+
+    @property
+    def listen_ip(self):
+        """Listen ip for service private or public avalability"""
+        if getattr(self, 'listen_private_ip', False):
+            return self.private_ip
+        return self.public_ip
 
     @property
     def user(self):

@@ -121,7 +121,7 @@ SETTINGS = RedisSettings()
 
 
 class RedisTasks(DeployTasks, SystemdTasksMixin):
-    SETTINGS = SETTINGS
+    SETTINGS = RedisSettings
 
     async def get_iptables_template(self):
         return self.settings.iptables_v4_rules

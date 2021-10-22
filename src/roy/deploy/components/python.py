@@ -73,7 +73,7 @@ SETTINGS = PythonSettings()
 
 
 class PythonTasks(AppTasks):
-    SETTINGS = SETTINGS
+    SETTINGS = PythonSettings
 
     @register
     async def pip(self, command: str):

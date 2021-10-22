@@ -87,7 +87,7 @@ class PostgresSettings(DeployComponentSettings):
     @property
     def bin(self):
         return self.root_abs / 'bin' / self._data['bin']
-    
+
     @property
     def port(self):
         return self._data['port']
@@ -126,7 +126,7 @@ SETTINGS = PostgresSettings()
 
 
 class PostgresTasks(DeployTasks, SystemdTasksMixin):
-    SETTINGS = SETTINGS
+    SETTINGS = PostgresSettings
 
     async def get_iptables_template(self):
         return self.settings.iptables_v4_rules

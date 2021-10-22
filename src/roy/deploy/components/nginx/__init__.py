@@ -158,7 +158,7 @@ SETTINGS = NginxSettings()
 
 
 class NginxTasks(DeployTasks, SystemdTasksMixin):
-    SETTINGS = SETTINGS
+    SETTINGS = NginxSettings
 
     async def get_iptables_template(self):
         return self.settings.iptables_v4_rules

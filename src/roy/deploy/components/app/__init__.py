@@ -77,7 +77,7 @@ SETTINGS = AppSettings()
 
 
 class AppTasks(DeployTasks, SystemdTasksMixin):
-    SETTINGS = SETTINGS
+    SETTINGS = AppSettings
 
     @register
     @nohost
