@@ -1,13 +1,9 @@
 import json
 import asyncio
 
-from pathlib import Path
-
 import jinja2
 
-from roy.utils.os import run_in_shell, get_homepath
-from roy.utils.collections import update_dict_recur
-from roy.app.settings import validate_schema
+from roy.utils.os import run_in_shell
 
 from . import DeployProvider
 from ..settings import SETTINGS
@@ -117,6 +113,9 @@ class VagrantProvider(DeployProvider):
             server['public_ip'] for server in self.servers
         ])
 
+        for server in self.other_servers:
+            for component in server['components']:
+                hosts.setdefault(component, []).append(server)
         old_hosts_file.write_text(json.dumps(hosts, indent=2))
 
         print('** server setup completed')

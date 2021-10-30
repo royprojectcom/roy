@@ -68,6 +68,10 @@ class PythonSettings(AppSettings):
     def root_path(self):
         return self.root_abs / 'bin'
 
+    @property
+    def port(self):
+        return self._data.get('port', 8000)
+
 
 SETTINGS = PythonSettings()
 

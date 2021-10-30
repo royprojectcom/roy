@@ -16,6 +16,7 @@ class AppSettings(DeployComponentSettings):
     SCHEMA = {
         'instance': {'type': 'integer'},
         'bin': {'type': 'string', 'required': True},
+        'listen_private_ip': {'type': 'boolean', 'required': True},
         'user': {'type': 'string', 'required': False},
         'settings': {'type': 'string'},
         'systemd': SystemdTasksMixin.SCHEMA,
@@ -32,6 +33,7 @@ class AppSettings(DeployComponentSettings):
         'bin': 'app.sh',
         'instance': 1,
         'settings': '',
+        'listen_private_ip': True,
         'systemd': {
             'template': 'app.service',
             'name': '{settings.NAME}_{instance}.service',
@@ -47,6 +49,10 @@ class AppSettings(DeployComponentSettings):
             {'local': './somedir', 'remote': './some'}
         ]
     }
+
+    @property
+    def listen_private_ip(self):
+        return self._data['listen_private_ip']
 
     @property
     def bin(self):

@@ -1,58 +1,131 @@
-# from ..tasks import DeployTasks
-# from ..settings import SERVICES_SCHEMA, DeployComponentSettings
+from ..tasks import DeployTasks, TaskRunError, register
+from ..settings import DeployComponentSettings
 
 
-# class NFSClientSettings(DeployComponentSettings):
-#     KEY = 'nfs.client'
-#     SCHEMA = {
-#         'mount': {
-#             'keyschema': {'type': 'string'},
-#             'valueschema': {'type': 'string'},
-#         }
-#     }
-#     DEFAULT = {
-#         'mount': {}
-#     }
+class NFSSettings(DeployComponentSettings):
+    NAME = 'nfs'
+    SCHEMA = {
+        'user': {'type': 'string', 'required': True},
+        'mount': {
+            'type': 'list',
+            'schema': {
+                'type': 'dict',
+                'schema': {
+                    'from': {'type': 'string', 'required': True},
+                    'dir': {'type': 'string', 'required': True}
+                }
+            }
+        },
+        'export': {
+            'type': 'list',
+            'schema': {
+                'type': 'dict',
+                'schema': {
+                    'chmod': {'type': 'integer', 'required': False},
+                    'user': {'type': 'string', 'required': False},
+                    'name': {'type': 'string', 'required': True},
+                    'dir': {'type': 'string', 'required': True},
+                    'config': {'type': 'string', 'required': True}
+                }
+            }
+        },
+        'service': {'type': 'string', 'required': True},
+        'install': {'type': 'boolean', 'required': True}
+    }
+    DEFAULT = {
+        'user': 'root',
+        'mount': [],
+        'export': [],
+        'install': True,
+        'service': 'nfs-kernel-server'
+    }
 
-#     @property
-#     def mount(self):
-#         return self._data['mount']
+    @property
+    def mount(self):
+        return self._data['mount']
+
+    @property
+    def export(self):
+        return self._data['export']
+
+    @property
+    def service(self):
+        return self._data['service']
+
+    @property
+    def install(self):
+        return self._data['install']
 
 
-# CLIENT_SETTINGS = NFSClientSettings()
+SETTINGS = NFSSettings()
 
 
-# class NFSServerSettings(DeployComponentSettings):
-#     KEY = 'nfs.server'
-#     SCHEMA = {
-#         'export': {'type': 'list', 'schema': {'type': 'string'}},
-#     }
-#     DEFAULT = {
-#         'export': []
-#     }
+class NFSDeployTasks(DeployTasks):
+    SETTINGS = NFSSettings
 
+    @register
+    async def setup(self):
+        await self.install()
+        await self.export()
+        await self.mount()
 
-# SERVER_SETTINGS = NFSServerSettings()
+    @register
+    async def install(self):
+        if not self.settings.install:
+            return
+        if self.settings.mount:
+            await self._apt_install('rsync', 'nfs-common')
+        if self.settings.export:
+            await self._apt_install('rsync', self.settings.service)
 
+    @register
+    async def export(self):
+        for export in self.settings.export:
+            for component in self.get_all_manager_tasks(self.settings.NAME):
+                for mount in component.settings.mount:
+                    if mount['from'] != export['name']:
+                        continue
 
-# class NFSClientDeployTasks(DeployTasks):
-#     SETTINGS = CLIENT_SETTINGS
+                    public_ip = component.settings.public_ip
+                    private_ip = component.settings.private_ip
+                    configs = [
+                        f"{export['dir']} {ip}({export['config']})"
+                        for ip in (public_ip, private_ip)
+                        if ip
+                    ]
 
-#     async def build(self):
-#         await self._apt_install('rsync', 'nfs-common')
-    
-#     async def sync(self):
-#         for ext_folder, local_folder in self.settings.mount:
-#             try:
-#                 items = await self._sudo("ls /nfs/data")
-#             except TaskRunError:
-#                 await self._sudo("mkdir -p /nfs/data")
-#             if not items:
-#                 await self._sudo("mount {}:/mnt/data /nfs/data")
+                    with self._set_user(export.get('user', self.settings.user)):
+                        try:
+                            await self._run(f"ls {export['dir']}")
+                        except TaskRunError:
+                            await self._run(f"mkdir -p {export['dir']}")
 
+                        if 'chmod' in export:
+                            await self._run(
+                                f"chmod -R {export['chmod']} {export['dir']}")
 
-# class NFSServerDeployTasks(DeployTasks):
-#     SETTINGS = SERVER_SETTINGS
+                    with self._set_user('root'):
+                        await self._run('echo "" > /etc/exports')
+                        for config in configs:
+                            await self._append(config, '/etc/exports')
 
-#     async def build(self):
-#         await self._apt_install('rsync', 'nfs-kernel-server')
+                    await self._sudo("exportfs -a")
+                    await self._sudo(
+                        f"systemctl reload {self.settings.service}")
+
+    @register
+    async def mount(self):
+        for mount in self.settings.mount:
+            try:
+                await self._run(f"ls {mount['dir']}")
+            except TaskRunError:
+                await self._run(f"mkdir -p {mount['dir']}")
+
+            for component in self.get_all_manager_tasks('nfs'):
+                for export in component.settings.export:
+                    if mount['from'] == export['name']:
+                        await self._run(f"umount {mount['dir']}")
+                        await self._run(
+                            f"mount -t nfs {component.public_ip}:"
+                            f"{export['dir']} {mount['dir']} -vvv"
+                        )

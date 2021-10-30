@@ -53,7 +53,8 @@ class DeploySettings(ComponentSettings):
             'roy.deploy.components.iptables',
             'roy.deploy.components.nginx',
             'roy.deploy.components.postgres',
-            'roy.deploy.components.redis'
+            'roy.deploy.components.redis',
+            'roy.deploy.components.nfs'
         ],
         'default_providers': [
             'roy.deploy.providers.vagrant',
@@ -126,8 +127,11 @@ class DeployComponentSettings:
 
     def __init__(self, settings=None, host=None):
         """Initialize deploy component settings, overrides by host settings"""
-        host_settings = self.get_for_host(host)
         host = host or {}
+        host_settings = self.get_for_host(host)
+
+        if not self.NAME:
+            raise ValueError(f'Provide NAME for settings {self.__class__}')
 
         settings = update_dict_recur(settings or {}, host_settings)
 

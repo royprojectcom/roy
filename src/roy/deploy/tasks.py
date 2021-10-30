@@ -62,13 +62,6 @@ class DeployTasks(Tasks):
     def get_namespace(cls):
         return cls.SETTINGS.NAME
 
-    @property
-    def listen_ip(self):
-        """Listen ip for service private or public avalability"""
-        if getattr(self.settings, 'listen_private_ip', False):
-            return self.private_ip
-        return self.public_ip
-
     def get_all_manager_tasks(self, name: str = ''):
         for task_class in self._manager.tasks.values():
             task_name = task_class.get_namespace()
@@ -251,6 +244,12 @@ class DeployTasks(Tasks):
 
         await self._rmrf(archive)
         await self._rmrf(archive_dir)
+
+    async def _append(self, content, dest_file: Path):
+        await self._run(
+            f'grep -qxF "{content}" {dest_file} || '
+            f'echo "{content}" >> {dest_file}'
+        )
 
     @register
     @onehost

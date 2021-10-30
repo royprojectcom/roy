@@ -39,6 +39,25 @@ class DeployProvider:
         self.local_root = Path(inspect.getfile(self.__class__)).parent
 
     @property
+    def other_servers(self):
+        servers = []
+        for scope, services in self.services.items():
+            for info in services:
+                for host in info['hosts']:
+                    if host['provider'] == self.NAME:
+                        continue
+                    name = host['name']
+                    for count in range(1, host['count'] + 1):
+                        service_name = scope
+                        if scope != name:
+                            service_name = f"{scope}-{name}"
+                        env = SETTINGS._data['env']
+                        host['name'] = f"{env}-{service_name}-{count}"
+                        host['components'] = info['components']
+                        servers.append(host.copy())
+        return servers
+
+    @property
     def servers(self):
         if self._servers:
             return self._servers

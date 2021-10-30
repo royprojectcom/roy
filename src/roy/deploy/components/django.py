@@ -6,12 +6,14 @@ from .python import PythonTasks, PythonSettings
 
 class DjangoSettings(PythonSettings):
     NAME = 'django'
+    # TODO: add jinja2 render here not default format
     DEFAULT = update_dict_recur(PythonSettings.DEFAULT, {
         'bin':
-            "uvicorn --host {{ deploy.ip }} "
-            "--port {{ settings.port + instance - 1 }} "
+            "uvicorn --host {settings.listen_ip} "
+            "--port {settings.port} "
             "--loop uvloop app.components.django.asgi:application "
-            "--lifespan off --http httptools",
+            "--lifespan off --http httptools --no-access-log "
+            "--log-level error",
         'port': 8000,
         'user': 'django'
     })

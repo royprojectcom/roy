@@ -180,6 +180,8 @@ class VultrProvider(DeployProvider):
 
         for host_list in old_hosts.values():
             for old_host in host_list:
+                if not old_host['provider']:
+                    continue
                 if old_host['name'] not in current_hosts:
                     await self.destroy(old_host, await self.remote_servers)
                     changed = True
@@ -193,10 +195,6 @@ class VultrProvider(DeployProvider):
                         current_hosts[old_host['name']]['id'] = old_host['id']
                     if old_host != current_hosts[old_host['name']]:
                         changed = True
-                        print('host changed')
-                        print('old', old_host)
-                        print('')
-                        print('new', current_hosts[old_host['name']])
 
         for host in current_hosts.values():
             old_host_names = [
@@ -223,6 +221,10 @@ class VultrProvider(DeployProvider):
         await self.update_ssh_keys([
             server['public_ip'] for server in self.servers
         ])
+
+        for server in self.other_servers:
+            for component in server['components']:
+                hosts.setdefault(component, []).append(server)
 
         old_hosts_file.write_text(json.dumps(hosts, indent=2))
 

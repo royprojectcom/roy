@@ -83,6 +83,11 @@ class NginxSettings(DeployComponentSettings):
     }
 
     @property
+    def bin(self):
+        # TODO: move from server.service
+        return ''
+
+    @property
     def build(self):
         return self.root / 'build'
 
