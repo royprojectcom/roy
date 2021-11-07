@@ -88,6 +88,7 @@ class PythonTasks(AppTasks):
             self, command: str, interactive: int = False, prefix: str = ''):
         if prefix:
             prefix = f'{prefix} '
+        prefix = f'SETTINGS={self.settings.module} {prefix}'
         return await self._run(
             f"{prefix}{self.settings.root_path / command}",
             interactive=interactive

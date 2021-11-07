@@ -180,7 +180,7 @@ class DeployComponentSettings:
     def filter(self, **attrs):
         host_settings, host = self.get_for_all_hosts()
         for settings in host_settings:
-            instance = self.__class__(settings, host)
+            instance = self.__class__(settings['components'][self.NAME], host)
             settings_not_matched = next((
                 key for key, value in attrs.items()
                 if getattr(instance, key) != value
