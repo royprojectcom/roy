@@ -33,6 +33,11 @@ def onehost(task):
     return task
 
 
+def firsthost(task):
+    task.__firsthost__ = True
+    return task
+
+
 class DeployTasks(Tasks):
     SETTINGS = None
 
@@ -196,16 +201,26 @@ class DeployTasks(Tasks):
             await self._rmrf(path)
         await self._run(f'mkdir -p {path}')
 
-    async def _upload(self, local_path: Path, path: Path = None, exclude=None):
+    async def _upload(
+            self, local_path: Path, path: Path = None,
+            exclude=None, include=None, from_host=False):
         exclude = [f"--exclude '{path}'" for path in exclude or []]
         exclude = ' '.join(exclude)
         dir_slash = '/' if local_path.is_dir() else ''
         if not path:
             path = Path('~/', local_path.name)
-        if local_path.exists():
+        paths = [
+            f"{local_path}{dir_slash}",
+            f"{self.user}@{self.public_ip}:{path}"
+        ]
+        if from_host:
+            paths.reverse()
+        paths = ' '.join(paths)
+        include = ' '.join(f"--include '{i}'" for i in include or [])
+        if local_path.exists() or from_host:
             await self._local(
-                f'rsync -rave "ssh -p {self.port}" --delete {exclude} '
-                f'{local_path}{dir_slash} {self.user}@{self.public_ip}:{path}'
+                f'rsync -rave "ssh -p {self.port}" --delete {include} '
+                f'{exclude} {paths}'
             )
 
     async def _upload_template(

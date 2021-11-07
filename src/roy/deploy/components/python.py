@@ -59,9 +59,9 @@ class PythonSettings(AppSettings):
 
     @property
     def site_packages_abs(self):
+        version = '.'.join(self.version.split('.')[:2])
         return (
-            self.root_abs / 'lib' /
-            f'python{self.version[:3]}' / 'site-packages'
+            self.root_abs / 'lib' / f'python{version}' / 'site-packages'
         )
 
     @property

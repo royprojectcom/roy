@@ -1,5 +1,7 @@
+from pathlib import Path
+
 from roy.utils.collections import update_dict_recur
-from roy.deploy.tasks import onehost, register
+from roy.deploy.tasks import firsthost, onehost, register
 
 from .python import PythonTasks, PythonSettings
 
@@ -28,4 +30,23 @@ class DjangoTasks(PythonTasks):
     @onehost
     @register
     async def shell(self, prefix: str = ''):
-        return await self.run('manage shell', interactive=True, prefix=prefix)
+        return await self.manage('shell')
+
+    @onehost
+    @register
+    async def manage(self, command: str = ''):
+        return await self.run(f'manage {command}', interactive=True)
+
+    @firsthost
+    @register
+    async def makemigrations(self, app: str = ''):
+        await self.manage(f'makemigrations {app}')
+        apps = await self._local('ls src')
+        apps = [app for app in apps.split() if '.' not in app]
+        for app in apps:
+            await self._upload(
+                Path(f'src/{app}'),
+                self.settings.site_packages_abs / f'{app}/*',
+                exclude=['*.*', '__pycache__'], from_host=True,
+                include=['/**/migrations/*.py']
+            )

@@ -66,11 +66,15 @@ class DeployTasksManager(TasksManager):
         method = getattr(task_class, name)
         is_nohost = getattr(method, '__nohost__', False)
         is_onehost = getattr(method, '__onehost__', False)
+        is_firsthost = getattr(method, '__firsthost__', False)
 
         if is_nohost:
             hosts = [self.nohost.copy()]
         else:
             hosts = self.hosts[task_class.get_namespace()]
+        
+        if is_firsthost:
+            return hosts[:1]
 
         if is_onehost and len(hosts) > 1:
             hosts_per_index = []

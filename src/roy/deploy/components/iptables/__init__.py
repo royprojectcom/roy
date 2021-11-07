@@ -4,6 +4,8 @@ from itertools import chain
 
 import jinja2
 
+from roy.utils.tasks import TaskRunError
+
 from ...tasks import DeployTasks, register
 from ...settings import DeployComponentSettings
 
@@ -110,8 +112,18 @@ class IPtablesTasks(DeployTasks, SystemdTasksMixin):
         await self._sync_systemd_units()
 
     @register
+    async def disable_ufw(self):
+        try:
+            await self._run('systemctl stop ufw')
+            await self._run('systemctl disable ufw')
+        except TaskRunError:
+            pass
+
+    @register
     async def setup(self):
         await self._apt_install('rsync', 'iptables')
+
+        await self.disable_ufw()
 
         await self.sync()
         await self.start()

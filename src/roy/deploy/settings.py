@@ -71,8 +71,13 @@ class DeploySettings(ComponentSettings):
 
     @property
     def settings_cache_file(self):
-        cache_dir = APP_SETTINGS.current_dir
-        return (cache_dir / f".roy_{self.env}.json")
+        cache_name = f".roy_{self.env}.json"
+        cache_app_dir = APP_SETTINGS.current_dir
+        cache_settings_dir = Path(inspect.getfile(self.__class__)).parent
+        cache = cache_app_dir / cache_name
+        if not cache.exists():
+            cache = cache_settings_dir / cache_name
+        return cache
 
     @property
     def services(self):
