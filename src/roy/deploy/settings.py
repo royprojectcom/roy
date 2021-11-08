@@ -74,9 +74,9 @@ class DeploySettings(ComponentSettings):
         cache_name = f".roy_{self.env}.json"
         cache_app_dir = APP_SETTINGS.current_dir
         cache_settings_dir = Path(inspect.getfile(self.__class__)).parent
-        cache = cache_app_dir / cache_name
+        cache = cache_settings_dir / cache_name
         if not cache.exists():
-            cache = cache_settings_dir / cache_name
+            cache = cache_app_dir / cache_name
         return cache
 
     @property
@@ -158,8 +158,8 @@ class DeployComponentSettings:
     @classmethod
     def get_for_host(cls, host=None):
         settings = {}
-        hosts, current = cls.get_for_all_hosts()
-        current = host or current
+        hosts = cls.get_for_all_hosts()
+        current = host or {}
         for host in hosts:
             if host['public_ip'] == current.get('public_ip') and \
                     host.get('private_ip') == current.get('private_ip'):
@@ -171,16 +171,16 @@ class DeployComponentSettings:
         hosts_file = SETTINGS.settings_cache_file
         if hosts_file.exists():
             hosts = json.loads(hosts_file.read_text())
-            return hosts.get(cls.NAME, []), hosts.get('__current__', {})
-        return [], {}
+            return hosts.get(cls.NAME, [])
+        return []
 
     def get(self, **attrs):
-        return next(self.filter(**attrs), self)
+        return next(self.filter(**attrs), None)
 
     def filter(self, **attrs):
-        host_settings, host = self.get_for_all_hosts()
-        for settings in host_settings:
-            instance = self.__class__(settings['components'][self.NAME], host)
+        for settings in self.get_for_all_hosts():
+            instance = self.__class__(
+                settings['components'][self.NAME], settings)
             settings_not_matched = next((
                 key for key, value in attrs.items()
                 if getattr(instance, key) != value
