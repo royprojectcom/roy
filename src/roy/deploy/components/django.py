@@ -27,6 +27,8 @@ SETTINGS = DjangoSettings()
 class DjangoTasks(PythonTasks):
     SETTINGS = DjangoSettings
 
+    # TODO: mount using nfs to remote server
+
     @onehost
     @register
     async def shell(self, prefix: str = ''):
@@ -36,6 +38,11 @@ class DjangoTasks(PythonTasks):
     @register
     async def manage(self, command: str = ''):
         return await self.run(f'manage {command}', interactive=True)
+
+    @firsthost
+    @register
+    async def migrate(self):
+        return await self.manage('migrate')
 
     @firsthost
     @register

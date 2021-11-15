@@ -24,9 +24,8 @@ SERVICES_SCHEMA = {
             'type': 'dict',
             'schema': {
                 'hosts': {
-                    'type': 'list',
+                    'type': 'dict',
                     'required': True,
-                    'schema': {'type': 'dict'}
                 },
                 'components': {'type': 'dict', 'required': False},
             }
@@ -38,12 +37,28 @@ SERVICES_SCHEMA = {
 class DeploySettings(ComponentSettings):
     KEY = 'deploy'
     SCHEMA = {
-        'env': {'type': 'string'},
+        'prefix': {'type': 'string'},
         'tasks': {'type': 'list'},
         'default_tasks': {'type': 'list'},
         'providers': {'type': 'list'},
         'default_providers': {'type': 'list'},
-        'services': SERVICES_SCHEMA,
+        'hosts': {
+            'type': 'dict',
+            'keyschema': {'type': 'string'},
+            'valueschema': {
+                'type': 'dict',
+                'schema': {
+                    'provider': {
+                        'type': 'dict',
+                        'required': False
+                    },
+                    'ssh_port': {'type': 'integer', 'required': False},
+                    'public_ip': {'type': 'string', 'required': False},
+                    'private_ip': {'type': 'string', 'required': False},
+                    'components': {'type': 'dict', 'required': False},
+                }
+            }
+        },
     }
     DEFAULT = {
         'default_tasks': [
@@ -57,12 +72,12 @@ class DeploySettings(ComponentSettings):
             'roy.deploy.components.nfs'
         ],
         'default_providers': [
-            'roy.deploy.providers.vagrant',
+            # 'roy.deploy.providers.vagrant',
             'roy.deploy.providers.vultr'
         ],
         'tasks': [],
         'providers': [],
-        'services': {},
+        'hosts': {},
     }
 
     @property
@@ -80,8 +95,12 @@ class DeploySettings(ComponentSettings):
         return cache
 
     @property
-    def services(self):
-        return self._data['services']
+    def hosts(self):
+        return self._data['hosts']
+
+    @property
+    def prefix(self):
+        return self._data['prefix']
 
     @property
     def tasks_classes(self):
@@ -91,12 +110,7 @@ class DeploySettings(ComponentSettings):
     @property
     def provider_classes(self):
         providers = self._data['default_providers'] + self._data['providers']
-        return [
-            provider_class
-            for provider_class in self._find_classes(
-                providers, 'DeployProvider'
-            )
-        ]
+        return self._find_classes(providers, 'DeployProvider')
 
     def _find_classes(self, modules, subclass):
         classes = []
@@ -132,50 +146,51 @@ class DeployComponentSettings:
 
     def __init__(self, settings=None, host=None):
         """Initialize deploy component settings, overrides by host settings"""
-        host = host or {}
-        host_settings = self.get_for_host(host)
-
         if not self.NAME:
             raise ValueError(f'Provide NAME for settings {self.__class__}')
 
-        settings = update_dict_recur(settings or {}, host_settings)
+        settings = settings or {}
+        host = host or {}
+        if not host:
+            host_settings, host = self.get_for_current_host()
+            settings = update_dict_recur(settings, host_settings)
 
         self.local_root = Path(inspect.getfile(self._local_root_class)).parent
-
-        # TODO: should be strict host params
         self.private_ip = host.get('private_ip', '')
         self.public_ip = host.get('public_ip', '')
         self.host_name = host.get('name', 'unnamed-host')
-        self.ssh_port = host.get('port', 22)
+        self.ssh_port = host.get('ssh_port', 22)
 
-        settings = update_dict_recur(self.DEFAULT, settings)
-        self._data = validate_schema(self.SCHEMA, settings)
+        self._data = validate_schema(
+            self.SCHEMA, update_dict_recur(self.DEFAULT, settings))
 
     @property
     def _local_root_class(self):
         return self.__class__
 
     @classmethod
-    def get_for_host(cls, host=None):
-        settings = {}
-        hosts = cls.get_for_all_hosts()
-        current = host or {}
-        for host in hosts:
-            if host['public_ip'] == current.get('public_ip') and \
-                    host.get('private_ip') == current.get('private_ip'):
-                settings = host['components'][cls.NAME]
-        return settings
+    def get_for_current_host(cls):
+        host_ips = os.popen('hostname -I').read().split()
+        for host in cls.get_for_all_hosts():
+            if host['public_ip'] in host_ips or \
+                    host.get('private_ip') in host_ips:
+                return host['components'][cls.NAME], host
+        return {}, {}
 
     @classmethod
     def get_for_all_hosts(cls):
         hosts_file = SETTINGS.settings_cache_file
         if hosts_file.exists():
             hosts = json.loads(hosts_file.read_text())
-            return hosts.get(cls.NAME, [])
+            return [
+                host
+                for host in hosts.values()
+                if cls.NAME in host.get('components', {})
+            ]
         return []
 
     def get(self, **attrs):
-        return next(self.filter(**attrs), None)
+        return next(self.filter(**attrs), self)
 
     def filter(self, **attrs):
         for settings in self.get_for_all_hosts():

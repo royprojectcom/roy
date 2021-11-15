@@ -109,7 +109,8 @@ class TasksManager:
             try:
                 method = getattr(task_class, name)
             except AttributeError:
-                pass
+                print(f'Method "{name}" in {task_class} not found')
+                continue
 
             before_hooks_to_run.append(
                 partial(self.run_hooks, task_class, name, 'before')

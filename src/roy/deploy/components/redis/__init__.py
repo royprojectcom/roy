@@ -55,6 +55,7 @@ class RedisSettings(DeployComponentSettings):
         },
 
         # TODO: move to base config (base package for this type of components)
+        # https://redis.io/download
         'workdir': '.',
         'port': 6379,
         'maxmemory': '64mb',
@@ -62,7 +63,7 @@ class RedisSettings(DeployComponentSettings):
         'listen_private_ip': True,
         'root': 'app',
         'packages': {
-            'redis': 'http://download.redis.io/releases/redis-6.2.5.tar.gz'
+            'redis': 'http://download.redis.io/releases/redis-6.2.6.tar.gz'
         },
         'iptables': {
             'v4': 'ipv4.rules'

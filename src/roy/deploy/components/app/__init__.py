@@ -94,9 +94,9 @@ class AppTasks(DeployTasks, SystemdTasksMixin):
             for task in self.get_all_manager_tasks(self.get_namespace())
         ])
 
-    async def _watch_and_sync_dir(self, dir_info, task):
+    async def _watch_and_sync_dir(self, dir_info, tasks):
         async for _ in awatch(dir_info['local']):
-            with self._set_host(task.host), self._set_user(task.user):
+            with self._set_from_tasks(tasks):
                 await self._upload(
                     dir_info['local'], dir_info['remote'],
                     exclude=dir_info['exclude']

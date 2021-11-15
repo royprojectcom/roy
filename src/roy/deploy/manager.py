@@ -23,7 +23,7 @@ class DeployTasksManager(TasksManager):
         self.hosts = {}
         self.nohost = {
             'user': '__nohost__',
-            'public_ip': None, 'private_ip': None, 'port': 0
+            'public_ip': None, 'private_ip': None, 'ssh_port': 22
         }
 
         for class_ in SETTINGS.tasks_classes:
@@ -36,7 +36,7 @@ class DeployTasksManager(TasksManager):
             self.override = True
 
         for provider_class in SETTINGS.provider_classes:
-            provider = provider_class(self, SETTINGS.services)
+            provider = provider_class(self, SETTINGS.hosts)
             self.hosts.update(asyncio.run(provider.initialize()))
 
         super().run(*commands)
@@ -71,8 +71,12 @@ class DeployTasksManager(TasksManager):
         if is_nohost:
             hosts = [self.nohost.copy()]
         else:
-            hosts = self.hosts[task_class.get_namespace()]
-        
+            hosts = [
+                host
+                for host in self.hosts.values()
+                if task_class.get_namespace() in host['components']
+            ]
+
         if is_firsthost:
             return hosts[:1]
 

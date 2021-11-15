@@ -53,52 +53,44 @@ class VultrProvider(DeployProvider):
         'notify': {'type': 'boolean'},
     }
 
+    # TODO: add provider global settings (keys ssh etc.)
     async def run(self, command, key=''):
         if not key:
-            for server in self.servers:
-                key = key or server.get('key')
+            for host in self.hosts.values():
+                key = key or host.get('provider', {}).get('key')
         if not key:
             raise ValueError('No key provided for vultr-cli')
         return await run_in_shell(f"VULTR_API_KEY='{key}' vultr-cli {command}")
 
-    @property
-    async def remote_servers(self):
-        if getattr(self, '_remote_servers', None):
-            return self._remote_servers
-
+    async def get_remote_hosts(self):
         result = {}
-        servers = await self.run('instance list')
-        for server in servers.split('\n')[1:-4]:
-            server = server.split()
-            if server[2].startswith(f'{SETTINGS.env}-'):
-                result[server[2]] = {
-                    'id': server[0],
-                    'public_ip': server[1],
-                    'name': server[2],
+        hosts = await self.run('instance list')
+        for host in hosts.split('\n')[1:-4]:
+            host = host.split()
+            if host[2].startswith(f'{SETTINGS.prefix}-'):
+                result[host[2]] = {
+                    'id': host[0],
+                    'public_ip': host[1],
+                    'name': host[2],
                 }
-        servers = await asyncio.gather(*[
-            self.get_server(s['id']) for s in result.values()
+        hosts = await asyncio.gather(*[
+            self.get(host['id']) for host in result.values()
         ])
-        for server in servers:
-            result[server['name']].update(server)
-        self._remote_servers = result
+        for host in hosts:
+            result[host['name']].update(host)
+        return result
 
-        return self._remote_servers
-
-    async def destroy(self, server, remote_servers):
-        if server['name'] not in remote_servers:
-            return
-
-        server = remote_servers.get(server['name'])
-        if server:
+    async def destroy(self, name, remote_hosts):
+        host = remote_hosts.get(name)
+        if host:
             resp = input(
-                f"do you want to destroy '{server['name']}"
-                f":{server['public_ip']}' ? [type: y or yes]: ")
+                f"do you want to destroy '{name}'"
+                f":{host['public_ip']}' ? [type: y or yes]: ")
             if resp.lower() in {'y', 'yes'}:
-                await self.run(f"instance destroy {server['id']}")
+                await self.run(f"instance destroy {host['id']}")
 
-    async def get_server(self, server_id):
-        resp = await self.run(f"instance get {server_id}")
+    async def get(self, host_id):
+        resp = await self.run(f"instance get {host_id}")
         info = {}
         for line in resp.split('\n'):
             data = line.split()
@@ -114,50 +106,50 @@ class VultrProvider(DeployProvider):
                     info['private_ip'] = info['public_ip']
         return info
 
-    async def create(self, server, remote_servers):
-        ssh_key = ''
-        if not ssh_key:
-            for s in self.servers:
-                ssh_key = ssh_key or s.get('ssh-key')
-        if server['name'] not in remote_servers:
+    async def create(self, host, remote_hosts):
+        ssh_key = host.get('provider', {}).get('ssh-key')
+        if host['name'] not in remote_hosts:
+            provider = host['provider']
             resp = await self.run(
-                f"instance create --os {self.OS[server['os']]} "
-                f"--plan {server['plan']} "
-                f"--region {self.REGION[server['region']]} "
-                f"--label {server['name']} "
-                f"--host {server['name']} "
-                f"--private-network={str(server['private_network']).lower()} "
-                f"--notify={str(server['notify']).lower()} "
+                f"instance create --os {self.OS[provider['os']]} "
+                f"--plan {provider['plan']} "
+                f"--region {self.REGION[provider['region']]} "
+                f"--label {host['name']} "
+                f"--host {host['name']} "
+                f"--private-network={str(provider['private_network']).lower()} "
+                f"--notify={str(provider['notify']).lower()} "
                 f"--ssh-keys {ssh_key} "
-                f"--auto-backup {str(server['backup']).lower()} ",
-                server.get('key')
+                f"--auto-backup {str(provider['backup']).lower()} ",
+                provider.get('key')
             )
-            server_id = resp.split('ID')[1].split('\n')[0].strip()
+            host_id = resp.split('ID')[1].split('\n')[0].strip()
         else:
-            server_id = remote_servers[server['name']]['id']
+            host_id = remote_hosts[host['name']]['id']
 
         info = {}
         retries = 0
 
         while 'ssh' not in info:
             if retries > 20:
-                raise ValueError(f"Can't initialize server {server['name']}")
+                raise ValueError(f"Can't initialize host {host['name']}")
             retries += 1
 
-            info = await self.get_server(server_id)
+            info = await self.get(host_id)
             if info.get('public_ip', '0.0.0.0') != '0.0.0.0':
                 try:
                     await asyncio.open_connection(
-                        info['public_ip'], server.get('port', 22), limit=10)
+                        info['public_ip'], host.get('ssh_port', 22), limit=10)
                     info['ssh'] = True
                 except OSError:
                     await asyncio.sleep(1)
+            else:
+                await asyncio.sleep(1)
 
-        server.update(info)
-        return server
+        host.update(info)
+        return host
 
     async def initialize(self):
-        if not self.servers:
+        if not self.hosts:
             return {}
 
         old_hosts = {}
@@ -165,45 +157,31 @@ class VultrProvider(DeployProvider):
         if self._manager.override:
             old_hosts_file.unlink(missing_ok=True)
 
-        current_hosts = {}
-        hosts = {}
-        for server in self.servers:
-            for component in server['components']:
-                hosts.setdefault(component, []).append(server)
-                current_hosts[server['name']] = server
-
+        current_hosts = self.hosts.copy()
         changed = False
         to_create = []
 
         if old_hosts_file.exists():
             old_hosts = json.loads(old_hosts_file.read_text())
 
-        for host_list in old_hosts.values():
-            for old_host in host_list:
-                if not old_host['provider']:
-                    continue
-                if old_host['name'] not in current_hosts:
-                    await self.destroy(old_host, await self.remote_servers)
+        remote_hosts = await self.get_remote_hosts()
+        for name, host in old_hosts.items():
+            if host.get('provider', {}).get('name') != self.NAME:
+                continue
+            if name not in current_hosts:
+                await self.destroy(host, remote_hosts)
+                changed = True
+            else:
+                old_host = {
+                    k: v for k, v in host.items()
+                    if k not in ('public_ip', 'private_ip', 'id')
+                }
+                if old_host != current_hosts[host['name']]:
                     changed = True
-                else:
-                    old_host = {
-                        k: v for k, v in old_host.items()
-                        if k not in ('public_ip', 'private_ip')
-                    }
-                    # what we should update here xDDD only migration
-                    if 'id' in old_host:
-                        current_hosts[old_host['name']]['id'] = old_host['id']
-                    if old_host != current_hosts[old_host['name']]:
-                        changed = True
 
-        for host in current_hosts.values():
-            old_host_names = [
-                h['name']
-                for host_list in old_hosts.values()
-                for h in host_list
-            ]
-            if host['name'] not in old_host_names:
-                to_create.append(self.create(host, await self.remote_servers))
+        for name in current_hosts:
+            if name not in old_hosts:
+                to_create.append(self.create(current_hosts[name].copy(), remote_hosts))
                 changed = True
 
         if to_create:
@@ -212,20 +190,16 @@ class VultrProvider(DeployProvider):
         if not changed and old_hosts_file.exists():
             return old_hosts
 
-        self._remote_servers = None
-        remote_servers = await self.remote_servers
+        remote_hosts = await self.get_remote_hosts()
         for host in current_hosts.values():
-            host.update(remote_servers[host['name']])
-
+            host.update(remote_hosts[host['name']])
+        
         print('** updating ssh keys')
         await self.update_ssh_keys([
-            server['public_ip'] for server in self.servers
+            host['public_ip'] for host in current_hosts.values()
         ])
 
-        for server in self.other_servers:
-            for component in server['components']:
-                hosts.setdefault(component, []).append(server)
+        current_hosts.update(self.other_hosts)
+        old_hosts_file.write_text(json.dumps(current_hosts, indent=2))
 
-        old_hosts_file.write_text(json.dumps(hosts, indent=2))
-
-        return hosts
+        return current_hosts

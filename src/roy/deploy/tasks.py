@@ -54,7 +54,7 @@ class DeployTasks(Tasks):
         self.host_name = self.settings.host_name
         self.public_ip = self.settings.public_ip
         self.private_ip = self.settings.private_ip
-        self.port = self.settings.ssh_port
+        self.ssh_port = self.settings.ssh_port
         self.user = self.settings.user
 
         self._current_prefix = ''
@@ -94,16 +94,16 @@ class DeployTasks(Tasks):
             self.user = old_user
 
     @contextmanager
-    def _set_host(self, host):
-        old_public_ip, old_private_ip, old_port =\
-            self.public_ip, self.private_ip, self.port
-        self.public_ip, self.private_ip, self.port =\
-            host['public_ip'], host['private_ip'], host.get('port', 22)
+    def _set_from_tasks(self, tasks):
+        old_public_ip, old_private_ip, old_port, old_user =\
+            self.public_ip, self.private_ip, self.ssh_port, self.user
+        self.public_ip, self.private_ip, self.ssh_port, self.user =\
+            tasks.public_ip, tasks.private_ip, tasks.ssh_port, tasks.user
         try:
             yield self
         finally:
-            self.public_ip, self.private_ip, self.port =\
-                old_public_ip, old_private_ip, old_port
+            self.public_ip, self.private_ip, self.ssh_port, self.user =\
+                old_public_ip, old_private_ip, old_port, old_user
 
     @contextmanager
     def _prefix(self, command):
@@ -184,7 +184,7 @@ class DeployTasks(Tasks):
                 f"{self.user}@{self.public_ip}] {command}"
             )
         response = await self._local(
-            f"ssh {interactive_flag} -p {self.port} "
+            f"ssh {interactive_flag} -p {self.ssh_port} "
             f"{self.user}@{self.public_ip} "
             f'"{self._current_prefix}{command}"',
             interactive=interactive, debug=False
@@ -219,7 +219,7 @@ class DeployTasks(Tasks):
         include = ' '.join(f"--include '{i}'" for i in include or [])
         if local_path.exists() or from_host:
             await self._local(
-                f'rsync -rave "ssh -p {self.port}" --delete {include} '
+                f'rsync -rave "ssh -p {self.ssh_port}" --delete {include} '
                 f'{exclude} {paths}'
             )
 

@@ -30,57 +30,57 @@ class DeployProvider:
     DEFAULT = {}
     SCHEMA = {}
 
-    def __init__(self, manager, services):
-        self._servers = []
+    # TODO: add support for different providers in one list
+
+    def __init__(self, manager, hosts):
+        self._raw_hosts = hosts
+        self._hosts = {}
         self._manager = manager
 
-        self.services = services
         self.project_dir = Path().cwd()
         self.local_root = Path(inspect.getfile(self.__class__)).parent
 
     @property
-    def other_servers(self):
-        servers = []
-        for scope, services in self.services.items():
-            for info in services:
-                for host in info['hosts']:
-                    if host['provider'] == self.NAME:
-                        continue
-                    name = host['name']
-                    for count in range(1, host['count'] + 1):
-                        service_name = scope
-                        if scope != name:
-                            service_name = f"{scope}-{name}"
-                        env = SETTINGS._data['env']
-                        host['name'] = f"{env}-{service_name}-{count}"
-                        host['components'] = info['components']
-                        servers.append(host.copy())
-        return servers
+    def other_hosts(self):
+        other_hosts = {}
+        for name, host in self._raw_hosts.items():
+            if host.get('provider', {}).get('name') == self.NAME:
+                continue
+            for count in range(1, host.get('count', 1) + 1):
+                prefix = SETTINGS.prefix
+                name = f"{prefix}-{name}"
+                if count > 1:
+                    name += f'-{count}'
+                host['name'] = name
+                other_hosts[name] = host.copy()
+        return other_hosts
 
     @property
-    def servers(self):
-        if self._servers:
-            return self._servers
+    def hosts(self):
+        """Get list of all hosts provided by deploy configuration to
+        bootstrap using local or remote provider."""
+        if self._hosts:
+            return self._hosts
 
-        for scope, services in self.services.items():
-            for info in services:
-                for host in info['hosts']:
-                    if host['provider'] != self.NAME:
-                        continue
-                    host = update_dict_recur(self.DEFAULT, host)
-                    host = validate_schema(self.SCHEMA, host)
-                    name = host['name']
-                    for count in range(1, host['count'] + 1):
-                        service_name = scope
-                        if scope != name:
-                            service_name = f"{scope}-{name}"
-                        env = SETTINGS._data['env']
-                        host['name'] = f"{env}-{service_name}-{count}"
-                        host['components'] = info['components']
-                        self._servers.append(host.copy())
-        return self._servers
+        for name, host in self._raw_hosts.items():
+            if host.get('provider', {}).get('name') != self.NAME:
+                continue
+
+            host['provider'] = update_dict_recur(self.DEFAULT, host['provider'])
+            host['provider'] = validate_schema(self.SCHEMA, host['provider'])
+
+            for count in range(1, host['provider'].get('count', 1) + 1):
+                prefix = SETTINGS.prefix
+                name = f"{prefix}-{name}"
+                if count > 1:
+                    name += f'-{count}'
+                host['name'] = name
+                self._hosts[name] = host.copy()
+
+        return self._hosts
 
     async def update_ssh_keys(self, ips):
+        # TODO: update only if ip is not in known hosts (!!!)
         known_hosts = get_homepath() / '.ssh' / 'known_hosts'
 
         for ip in ips:

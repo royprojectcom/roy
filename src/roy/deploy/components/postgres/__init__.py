@@ -54,7 +54,7 @@ class PostgresSettings(DeployComponentSettings):
         'locale': 'en_US.UTF-8',
         'sources': {
             'postgres': 'https://ftp.postgresql.org/pub/source'
-                        '/v13.4/postgresql-13.4.tar.gz',
+                        '/v14.1/postgresql-14.1.tar.gz',
         },
         'configs': ['pg_hba.conf', 'postgresql.conf'],
         'iptables': {
@@ -82,6 +82,7 @@ class PostgresSettings(DeployComponentSettings):
         #     # btree_gin, https://www.postgresql.org/docs/current/btree-gin.html
         #     # btree_gist, citext, cube
         # }
+        # https://www.postgresql.org/ftp/source/
     }
 
     @property
