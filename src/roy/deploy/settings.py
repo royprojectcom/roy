@@ -150,10 +150,11 @@ class DeployComponentSettings:
             raise ValueError(f'Provide NAME for settings {self.__class__}')
 
         settings = settings or {}
-        host = host or {}
-        if not host:
-            host_settings, host = self.get_for_current_host()
-            settings = update_dict_recur(settings, host_settings)
+        host_settings, host = self.get_for_host(host)
+
+        settings = update_dict_recur(settings, host_settings)
+        self._data = validate_schema(
+            self.SCHEMA, update_dict_recur(self.DEFAULT, settings))
 
         self.local_root = Path(inspect.getfile(self._local_root_class)).parent
         self.private_ip = host.get('private_ip', '')
@@ -161,16 +162,17 @@ class DeployComponentSettings:
         self.host_name = host.get('name', 'unnamed-host')
         self.ssh_port = host.get('ssh_port', 22)
 
-        self._data = validate_schema(
-            self.SCHEMA, update_dict_recur(self.DEFAULT, settings))
-
     @property
     def _local_root_class(self):
         return self.__class__
 
     @classmethod
-    def get_for_current_host(cls):
-        host_ips = os.popen('hostname -I').read().split()
+    def get_for_host(cls, current=None):
+        if current:
+            host_ips = {current['public_ip'], current['private_ip']}
+        else:
+            host_ips = set(os.popen('hostname -I').read().split())
+
         for host in cls.get_for_all_hosts():
             if host['public_ip'] in host_ips or \
                     host.get('private_ip') in host_ips:

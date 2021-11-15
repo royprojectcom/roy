@@ -18,7 +18,7 @@ class AppSettings(DeployComponentSettings):
         'bin': {'type': 'string', 'required': True},
         'listen_private_ip': {'type': 'boolean', 'required': True},
         'user': {'type': 'string', 'required': False},
-        'settings': {'type': 'string'},
+        'module': {'type': 'string'},
         'systemd': SystemdTasksMixin.SCHEMA,
         'watch': {
             'type': 'list',
@@ -32,7 +32,7 @@ class AppSettings(DeployComponentSettings):
     DEFAULT = {
         'bin': 'app.sh',
         'instance': 1,
-        'settings': '',
+        'module': '',
         'listen_private_ip': True,
         'systemd': {
             'template': 'app.service',
@@ -63,7 +63,7 @@ class AppSettings(DeployComponentSettings):
 
     @property
     def module(self):
-        return self._data['settings']
+        return self._data['module']
 
     @property
     def instance(self):
