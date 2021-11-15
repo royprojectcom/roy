@@ -32,10 +32,11 @@ class DeployProvider:
 
     # TODO: add support for different providers in one list
 
-    def __init__(self, manager, hosts):
+    def __init__(self, manager, hosts, settings):
         self._raw_hosts = hosts
         self._hosts = {}
         self._manager = manager
+        self._settings = settings
 
         self.project_dir = Path().cwd()
         self.local_root = Path(inspect.getfile(self.__class__)).parent
@@ -44,15 +45,11 @@ class DeployProvider:
     def other_hosts(self):
         other_hosts = {}
         for name, host in self._raw_hosts.items():
-            if host.get('provider', {}).get('name') == self.NAME:
+            if host.get('provider', {}).get('name', '') == self.NAME:
                 continue
-            for count in range(1, host.get('count', 1) + 1):
-                prefix = SETTINGS.prefix
-                name = f"{prefix}-{name}"
-                if count > 1:
-                    name += f'-{count}'
-                host['name'] = name
-                other_hosts[name] = host.copy()
+
+            host['name'] = name
+            other_hosts[name] = host.copy()
         return other_hosts
 
     @property
@@ -63,18 +60,24 @@ class DeployProvider:
             return self._hosts
 
         for name, host in self._raw_hosts.items():
-            if host.get('provider', {}).get('name') != self.NAME:
+            provider = host.get('provider', {})
+            if provider.get('name', '') != self.NAME:
                 continue
 
-            host['provider'] = update_dict_recur(self.DEFAULT, host['provider'])
-            host['provider'] = validate_schema(self.SCHEMA, host['provider'])
+            # per host -> global providers -> default settings
+            provider = update_dict_recur(
+                self._settings, provider)
+            provider = update_dict_recur(
+                self.DEFAULT, provider)
+            provider = validate_schema(self.SCHEMA, provider)
 
-            for count in range(1, host['provider'].get('count', 1) + 1):
+            for count in range(1, provider.get('count', 1) + 1):
                 prefix = SETTINGS.prefix
                 name = f"{prefix}-{name}"
                 if count > 1:
                     name += f'-{count}'
                 host['name'] = name
+                host['provider'] = provider
                 self._hosts[name] = host.copy()
 
         return self._hosts

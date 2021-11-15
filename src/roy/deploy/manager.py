@@ -36,7 +36,8 @@ class DeployTasksManager(TasksManager):
             self.override = True
 
         for provider_class in SETTINGS.provider_classes:
-            provider = provider_class(self, SETTINGS.hosts)
+            settings = SETTINGS.providers.get(provider_class.NAME, {})
+            provider = provider_class(self, SETTINGS.hosts, settings)
             self.hosts.update(asyncio.run(provider.initialize()))
 
         super().run(*commands)

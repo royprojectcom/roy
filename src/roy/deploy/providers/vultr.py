@@ -193,7 +193,7 @@ class VultrProvider(DeployProvider):
         remote_hosts = await self.get_remote_hosts()
         for host in current_hosts.values():
             host.update(remote_hosts[host['name']])
-        
+
         print('** updating ssh keys')
         await self.update_ssh_keys([
             host['public_ip'] for host in current_hosts.values()

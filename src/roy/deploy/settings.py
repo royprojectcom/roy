@@ -40,18 +40,16 @@ class DeploySettings(ComponentSettings):
         'prefix': {'type': 'string'},
         'tasks': {'type': 'list'},
         'default_tasks': {'type': 'list'},
-        'providers': {'type': 'list'},
         'default_providers': {'type': 'list'},
+        'providers': {'type': 'list'},
+        'provider': {'type': 'dict', 'required': False},
         'hosts': {
             'type': 'dict',
             'keyschema': {'type': 'string'},
             'valueschema': {
                 'type': 'dict',
                 'schema': {
-                    'provider': {
-                        'type': 'dict',
-                        'required': False
-                    },
+                    'provider': {'type': 'dict', 'required': False},
                     'ssh_port': {'type': 'integer', 'required': False},
                     'public_ip': {'type': 'string', 'required': False},
                     'private_ip': {'type': 'string', 'required': False},
@@ -75,8 +73,9 @@ class DeploySettings(ComponentSettings):
             # 'roy.deploy.providers.vagrant',
             'roy.deploy.providers.vultr'
         ],
-        'tasks': [],
         'providers': [],
+        'provider': {},
+        'tasks': [],
         'hosts': {},
     }
 
@@ -97,6 +96,10 @@ class DeploySettings(ComponentSettings):
     @property
     def hosts(self):
         return self._data['hosts']
+
+    @property
+    def providers(self):
+        return self._data['provider']
 
     @property
     def prefix(self):
