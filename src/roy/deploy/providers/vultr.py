@@ -152,17 +152,10 @@ class VultrProvider(DeployProvider):
         if not self.hosts:
             return {}
 
-        old_hosts = {}
-        old_hosts_file = SETTINGS.settings_cache_file
-        if self._manager.override:
-            old_hosts_file.unlink(missing_ok=True)
-
+        old_hosts = self._old_hosts.copy()
         current_hosts = self.hosts.copy()
         changed = False
         to_create = []
-
-        if old_hosts_file.exists():
-            old_hosts = json.loads(old_hosts_file.read_text())
 
         remote_hosts = await self.get_remote_hosts()
         for name, host in old_hosts.items():
@@ -187,7 +180,7 @@ class VultrProvider(DeployProvider):
         if to_create:
             await asyncio.gather(*to_create)
 
-        if not changed and old_hosts_file.exists():
+        if not changed and old_hosts:
             return old_hosts
 
         remote_hosts = await self.get_remote_hosts()
@@ -200,6 +193,4 @@ class VultrProvider(DeployProvider):
         ])
 
         current_hosts.update(self.other_hosts)
-        old_hosts_file.write_text(json.dumps(current_hosts, indent=2))
-
         return current_hosts

@@ -80,14 +80,10 @@ class DeploySettings(ComponentSettings):
     }
 
     @property
-    def env(self):
-        return self._data.get('env', APP_SETTINGS.env)
-
-    @property
     def settings_cache_file(self):
-        cache_name = f".roy_{self.env}.json"
         cache_app_dir = APP_SETTINGS.current_dir
         cache_settings_dir = Path(inspect.getfile(self.__class__)).parent
+        cache_name = f"{self.prefix}.json"
         cache = cache_settings_dir / cache_name
         if not cache.exists():
             cache = cache_app_dir / cache_name
@@ -103,7 +99,7 @@ class DeploySettings(ComponentSettings):
 
     @property
     def prefix(self):
-        return self._data['prefix']
+        return self._data.get('prefix', '')
 
     @property
     def tasks_classes(self):

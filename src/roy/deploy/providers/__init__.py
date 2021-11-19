@@ -32,8 +32,9 @@ class DeployProvider:
 
     # TODO: add support for different providers in one list
 
-    def __init__(self, manager, hosts, settings):
+    def __init__(self, manager, hosts, old_hosts, settings):
         self._raw_hosts = hosts
+        self._old_hosts = old_hosts
         self._hosts = {}
         self._manager = manager
         self._settings = settings

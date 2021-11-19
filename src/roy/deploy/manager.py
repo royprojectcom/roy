@@ -1,16 +1,11 @@
+import json
 import asyncio
-import importlib
-import logging
-import functools
 
 from contextlib import contextmanager, asynccontextmanager
-from pathlib import Path
 
-import jinja2
+from roy.utils.tasks import TasksManager, register
 
-from roy.utils.tasks import Tasks, TasksManager, TaskRunError, register
-
-from .settings import SETTINGS, DeployComponentSettings
+from .settings import SETTINGS
 from .tasks import DeployTasks
 
 
@@ -35,11 +30,20 @@ class DeployTasksManager(TasksManager):
             commands.remove('-f')
             self.override = True
 
+        old_hosts_file, old_hosts = SETTINGS.settings_cache_file, {}
+        if self.override:
+            old_hosts_file.unlink(missing_ok=True)
+        elif old_hosts_file.exists():
+            old_hosts = json.loads(old_hosts_file.read_text())
+
         for provider_class in SETTINGS.provider_classes:
             settings = SETTINGS.providers.get(provider_class.NAME, {})
-            provider = provider_class(self, SETTINGS.hosts, settings)
+            provider = provider_class(
+                self, SETTINGS.hosts, old_hosts, settings)
             self.hosts.update(asyncio.run(provider.initialize()))
 
+        SETTINGS.settings_cache_file.write_text(
+            json.dumps(self.hosts, indent=2))
         super().run(*commands)
 
     def run_hooks(self, task_class, name, hook_name, instance=None):
