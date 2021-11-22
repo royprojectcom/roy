@@ -68,11 +68,9 @@ class DeployTasks(Tasks):
         return cls.SETTINGS.NAME
 
     def get_all_manager_tasks(self, name: str = ''):
-        for task_class in self._manager.tasks.values():
-            task_name = task_class.get_namespace()
-            if name and name != task_name:
-                continue
-            for host in self._manager.hosts.get(task_name, []):
+        for host in self._manager.hosts.values():
+            if name in host.get('components', {}):
+                task_class = self._manager.tasks[name]
                 if issubclass(task_class, DeployTasks):
                     yield task_class(self._manager, self._lock, host)
 

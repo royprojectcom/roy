@@ -62,7 +62,6 @@ class DeployTasksManager(TasksManager):
                 getattr(task_class(self, lock, host), name)
                 for host in current_hosts
             ]
-            # return exceptions (?)
             await asyncio.gather(*[task(*args) for task in tasks])
 
         asyncio.run(run())

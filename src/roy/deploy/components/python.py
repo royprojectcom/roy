@@ -72,6 +72,20 @@ class PythonSettings(AppSettings):
     def port(self):
         return self._data.get('port', 8000)
 
+    @property
+    def watch_dirs(self):
+        watch_dirs = super().watch_dirs
+        current_dir = Path.cwd()
+        for directory in (current_dir / 'src').glob('*'):
+            if '.egg-info' not in directory.name:
+                local = directory
+        remote = self.site_packages_abs / local.name
+        watch_dirs += [{
+            'local': local, 'remote': remote,
+            'exclude': ['__pycache__', '*.pyo', '*.pyc']
+        }]
+        return watch_dirs
+
 
 SETTINGS = PythonSettings()
 
@@ -100,7 +114,16 @@ class PythonTasks(AppTasks):
         return await self.run('python3', interactive=True, prefix=prefix)
 
     @register
-    async def sync(self, type_: str = ''):
+    async def sync(self):
+        for watch in self.settings.watch_dirs:
+            await self._upload(
+                watch['local'], watch['remote'], watch['exclude'])
+
+        await self._sync_roy_cache()
+        await self._sync_systemd_units()
+
+    @register
+    async def install(self, type_: str = ''):
         current_dir = Path.cwd()
         if not (current_dir / 'setup.py').exists():
             return
@@ -114,18 +137,16 @@ class PythonTasks(AppTasks):
         await self.pip(f'install {flag} {package}')
         await self._rmrf(Path(package))
 
-        await self._sync_roy_cache()
-        await self._sync_systemd_units()
-
     @register
     async def setup(self):
         await self.build()
+        await self.install()
         await self.sync()
         await self.start()
 
-    @register.before(sync)
+    @register.before(install)
     @register.before(setup)
-    async def before_sync(self):
+    async def prepare_package(self):
         current_dir = Path.cwd()
         if not (current_dir / 'setup.py').exists():
             return
@@ -133,9 +154,9 @@ class PythonTasks(AppTasks):
         await self._local('pip install -e .')
         await self._local('python setup.py sdist bdist_wheel')
 
-    @register.after(sync)
+    @register.after(install)
     @register.after(setup)
-    async def after_sync(self):
+    async def clear_package(self):
         await self._local('rm -rf ./build ./dist')
 
     @register

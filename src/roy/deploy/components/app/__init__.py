@@ -45,9 +45,7 @@ class AppSettings(DeployComponentSettings):
                 'description': "Application description",
             }
         },
-        'watch': [
-            {'local': './somedir', 'remote': './some'}
-        ]
+        'watch': []
     }
 
     @property
@@ -71,12 +69,14 @@ class AppSettings(DeployComponentSettings):
 
     @property
     def watch_dirs(self):
-        for info in self._data['watch']:
-            yield {
+        return [
+            {
                 'local': Path(info['local']),
                 'remote': info['remote'],
                 'exclude': info.get('exclude', [])
             }
+            for info in self._data['watch']
+        ]
 
 
 SETTINGS = AppSettings()

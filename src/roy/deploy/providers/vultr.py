@@ -150,9 +150,12 @@ class VultrProvider(DeployProvider):
 
     async def initialize(self):
         if not self.hosts:
-            return {}
+            return self.other_hosts
 
         old_hosts = self._old_hosts.copy()
+        if old_hosts:
+            return old_hosts
+
         current_hosts = self.hosts.copy()
         changed = False
         to_create = []

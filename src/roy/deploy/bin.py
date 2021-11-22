@@ -26,5 +26,7 @@ def run():
         os.environ['SETTINGS'] = module_path
         from .manager import DEPLOY_TASKS_MANAGER
         DEPLOY_TASKS_MANAGER.run(*commands)
+    except KeyboardInterrupt:
+        pass
     finally:
         os.environ.pop('SETTINGS')
