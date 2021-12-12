@@ -61,7 +61,7 @@ class NginxSettings(DeployComponentSettings):
         # https://nginx.org/
         'packages': {
             'nginx': 'http://nginx.org/download/nginx-1.21.4.tar.gz',
-            'pcre': 'https://ftp.pcre.org/pub/pcre/pcre-8.45.tar.gz',
+            'pcre': 'https://sourceforge.net/projects/pcre/files/pcre/8.45/pcre-8.45.tar.gz',
             'zlib': 'http://www.zlib.net/zlib-1.2.11.tar.gz',
             'openssl': 'https://www.openssl.org/source/openssl-1.1.1l.tar.gz',
         },
@@ -202,7 +202,7 @@ class NginxTasks(DeployTasks, SystemdTasksMixin):
                     "--with-file-aio --with-http_realip_module "
                 )
                 await self._run(build_command)
-                await self._run('make')
+                await self._run('make -j$(nproc)')
                 await self._run('make install')
 
     @register

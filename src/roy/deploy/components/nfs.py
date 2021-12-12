@@ -12,7 +12,8 @@ class NFSSettings(DeployComponentSettings):
                 'type': 'dict',
                 'schema': {
                     'from': {'type': 'string', 'required': True},
-                    'dir': {'type': 'string', 'required': True}
+                    'dir': {'type': 'string', 'required': True},
+                    'ip': {'type': 'string', 'required': False}
                 }
             }
         },
@@ -90,7 +91,7 @@ class NFSDeployTasks(DeployTasks):
                     private_ip = component.settings.private_ip
                     configs = [
                         f"{export['dir']} {ip}({export['config']})"
-                        for ip in (public_ip, private_ip)
+                        for ip in (mount.get('ip'), private_ip, public_ip)
                         if ip
                     ]
 
@@ -105,11 +106,10 @@ class NFSDeployTasks(DeployTasks):
                                 f"chmod -R {export['chmod']} {export['dir']}")
 
                     with self._set_user('root'):
-                        await self._run('echo "" > /etc/exports')
                         for config in configs:
                             await self._append(config, '/etc/exports')
 
-                    await self._sudo("exportfs -a")
+                    await self._sudo("exportfs -arv")
                     await self._sudo(
                         f"systemctl reload {self.settings.service}")
 
@@ -117,14 +117,19 @@ class NFSDeployTasks(DeployTasks):
     async def mount(self):
         for mount in self.settings.mount:
             try:
-                await self._run(f"ls {mount['dir']}")
+                await self._run(f"umount {mount['dir']}")
             except TaskRunError:
-                await self._run(f"mkdir -p {mount['dir']}")
+                pass
+            try:
+                await self._run(f"rmdir {mount['dir']}")
+            except TaskRunError:
+                pass
 
-            for component in self.get_all_manager_tasks('nfs'):
+            await self._run(f"mkdir -p {mount['dir']}")
+
+            for component in self.get_all_manager_tasks(self.get_namespace()):
                 for export in component.settings.export:
                     if mount['from'] == export['name']:
-                        await self._run(f"umount {mount['dir']}")
                         await self._run(
                             f"mount -t nfs {component.public_ip}:"
                             f"{export['dir']} {mount['dir']} -vvv"

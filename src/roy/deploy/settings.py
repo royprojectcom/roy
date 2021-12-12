@@ -167,14 +167,16 @@ class DeployComponentSettings:
 
     @classmethod
     def get_for_host(cls, current=None):
-        if current:
-            host_ips = {current['public_ip'], current['private_ip']}
-        else:
-            host_ips = set(os.popen('hostname -I').read().split())
+        current = current or {}
+        host_ips = set() if current else set(
+            os.popen('hostname -I').read().split())
 
         for host in cls.get_for_all_hosts():
-            if host['public_ip'] in host_ips or \
-                    host.get('private_ip') in host_ips:
+            is_valid_host = (
+                'name' in current and host['name'] == current['name'] or
+                host['public_ip'] in host_ips or host['private_ip'] in host_ips
+            )
+            if is_valid_host:
                 return host['components'][cls.NAME], host
         return {}, {}
 

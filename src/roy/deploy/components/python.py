@@ -171,7 +171,7 @@ class PythonTasks(AppTasks):
             'make', 'build-essential', 'libssl-dev', 'zlib1g-dev',
             'libbz2-dev', 'libreadline-dev', 'libsqlite3-dev', 'wget', 'curl',
             'llvm', 'libncurses5-dev', 'libncursesw5-dev', 'xz-utils',
-            'tk-dev', 'tcl-dev', 'libffi-dev', 'wget'
+            'tk-dev', 'tcl-dev', 'libffi-dev', 'wget', 'automake'
         )
         await self._mkdir(self.settings.root, delete=True)
 
@@ -183,15 +183,16 @@ class PythonTasks(AppTasks):
             await self._run(
                 './configure --prefix={0} '
                 '--enable-loadable-sqlite-extensions --enable-shared '
-                '--with-system-expat --enable-optimizations '
+                '--with-system-expat --with-system-ffi '
+                '--with-ensurepip '
                 'LDFLAGS="-L{0}/extlib/lib -Wl,--rpath={0}/lib '
                 '-Wl,--rpath={0}/extlib/lib" '
-                'CPPFLAGS="-I{0}/extlib/include"'.format(
+                'CFLAGS="-I{0}/extlib/include -O3"'.format(
                     self.settings.root_abs
                 )
             )
             await self._run('make -j$(nproc) {}'.format(
-                'build_all' if fast_build else 'build'))
+                '' if fast_build else 'profile-opt'))
             await self._run('make install > /dev/null')
 
         await self.pip('install wheel')

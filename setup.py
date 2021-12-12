@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='roy',
-    version='0.4',
+    version='0.5',
     description="""Deploy and app configuration made easy.""",
     url='http://github.com/royprojectcom/roy',
     author='Morty Space',

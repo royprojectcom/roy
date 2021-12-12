@@ -50,6 +50,8 @@ class DeployProvider:
                 continue
 
             host['name'] = name
+            if 'private_ip' not in host:
+                host['private_ip'] = host['public_ip']
             other_hosts[name] = host.copy()
         return other_hosts
 

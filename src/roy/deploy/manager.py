@@ -58,11 +58,21 @@ class DeployTasksManager(TasksManager):
 
         async def run():
             lock = asyncio.Lock()
-            tasks = [
-                getattr(task_class(self, lock, host), name)
-                for host in current_hosts
-            ]
-            await asyncio.gather(*[task(*args) for task in tasks])
+            grouped_tasks = []
+            for host in current_hosts:
+                task = getattr(task_class(self, lock, host), name)
+                key = host['public_ip']
+                task_added = False
+                for group in grouped_tasks:
+                    if key not in group:
+                        group[key] = task
+                        task_added = True
+                        break
+                if not task_added:
+                    grouped_tasks.append({key: task})
+
+            for tasks in grouped_tasks:
+                await asyncio.gather(*[task(*args) for task in tasks.values()])
 
         asyncio.run(run())
 
